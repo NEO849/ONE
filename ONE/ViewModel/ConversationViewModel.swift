@@ -96,6 +96,24 @@ final class ConversationViewModel: ObservableObject {
         }
     }
     
+    // Helper
+    var currentRound: ConversationRound? {
+        guard rounds.indices.contains(selectedRoundIndex) else { return nil }
+        return rounds[selectedRoundIndex]
+    }
+
+    /// Liefert alle Steps der aktuellen Runde als nicht-optionales Array.
+    /// Vorteil: Die UI muss keine Nil-Coalescing-Magie (?? []) machen.
+    var currentSteps: [ChatStep] {
+        currentRound?.steps ?? []
+    }
+
+    /// ID des letzten Steps (falls vorhanden).
+    /// Wird für das automatische Scrollen nach unten genutzt.
+    var currentLastStepId: String? {
+        currentRound?.lastStep?.id
+    }
+    
     /// Beispielrunden (lesbar & minimal), damit #Preview sofort Inhalte zeigt.
     private static func makeInitialRounds() -> [ConversationRound] {
         // Runde 1
