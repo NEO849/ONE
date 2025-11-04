@@ -46,3 +46,19 @@ struct StackedAgentCardsView: View {
         .frame(maxWidth: .infinity, minHeight: 560, alignment: .topLeading)
     }
 }
+
+#Preview("StackedAgentCards – versetzt & klickbar") {
+    // Deutsch: Step mit drei Agentenantworten + finaler ChatGPT-Antwort.
+    var step = ChatStep(userPrompt: "Wie gliedere ich ein SwiftUI-Projekt?")
+    step.setAgentReply(agent: .gemini,  text: "Feature-Gruppierung: Features/<Name>/{Model,VM,View}.")
+    step.setAgentReply(agent: .claude,  text: "Shared-Layer: Services/Repositories zentralisieren.")
+    step.setAgentReply(agent: .mistral, text: "Einfach starten, später skalieren.")
+    step.setFinalReply(text: "Vernünftig: Feature-Ordner plus zentrale Shared-Komponenten.")
+
+    return StackedAgentCardsView(step: step)
+        .padding(24)
+        .background(
+            Image("background").resizable().scaledToFill()
+        )
+        .environment(\.colorScheme, .dark)
+}

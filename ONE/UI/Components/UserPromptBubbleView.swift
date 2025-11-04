@@ -26,3 +26,12 @@ struct UserPromptBubbleView: View {
         .glassCard(cornerRadius: 14)
     }
 }
+
+#Preview("UserPromptBubble – Beispiel") {
+    UserPromptBubbleView(promptText: "Erkläre mir MVVM in SwiftUI mit einem kleinen Beispiel.")
+        .padding(20)
+        .background(
+            Image("background").resizable().scaledToFill()
+        )
+        .environment(\.colorScheme, .dark)
+}

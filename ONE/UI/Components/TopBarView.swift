@@ -52,3 +52,16 @@ struct TopBarView: View {
         .padding(.top, 12)
     }
 }
+
+#Preview("TopBar – dunkel") {
+    TopBarView(
+        appLogoAsset: "onetext",
+        appNameAsset: "onetext",
+        onToggleSidebar: {},
+        onNewRound: {}
+    )
+    .background(
+        Image("background").resizable().scaledToFill()
+    )
+    .environment(\.colorScheme, .dark) // Glass wirkt im Dark Mode am besten
+}

@@ -45,3 +45,19 @@ struct AgentCardView: View {
         .accessibilityLabel(Text("\(agent.displayName) Karte"))
     }
 }
+
+#Preview("AgentCard – alle vier") {
+    ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 16) {
+            AgentCardView(agent: .chatgpt, bodyText: "Final check: Plausibel, klar strukturiert.")
+            AgentCardView(agent: .gemini,  bodyText: "Research: Quellen X/Y/Z, Fakten geprüft.")
+            AgentCardView(agent: .claude,  bodyText: "Structure: Schritt 1–3 mit Klarheit.")
+            AgentCardView(agent: .mistral, bodyText: "Concise: Kernaussagen in 3 Sätzen.")
+        }
+        .padding(20)
+    }
+    .background(
+        Image("background").resizable().scaledToFill()
+    )
+    .environment(\.colorScheme, .dark)
+}
