@@ -114,7 +114,7 @@ final class ConversationViewModel: ObservableObject {
         currentRound?.lastStep?.id
     }
     
-    /// Beispielrunden (lesbar & minimal), damit #Preview sofort Inhalte zeigt.
+    /// Beispielrunden, damit #Preview sofort Inhalte zeigt.
     private static func makeInitialRounds() -> [ConversationRound] {
         // Runde 1
         var roundOne = ConversationRound(title: "SwiftUI & MVVM Basics")

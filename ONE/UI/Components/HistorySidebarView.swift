@@ -9,13 +9,12 @@ import SwiftUI
 
 /// Einfahrende Sidebar links – listet Rundentitel (History) auf.
 /// Beziehung: ContentView hält "isOpen" & Auswahl-Callback.
-/// 
 struct HistorySidebarView: View {
     let rounds: [ConversationRound]
     @Binding var isOpen: Bool
     let onSelect: (Int) -> Void
 
-    private let widthFactor: CGFloat = 0.52
+    private let widthFactor: CGFloat = 0.54
 
     var body: some View {
         GeometryReader { geo in
@@ -28,7 +27,7 @@ struct HistorySidebarView: View {
                         .onTapGesture { withAnimation(.easeInOut) { isOpen = false } }
                 }
 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack() {
                     HStack {
                         Text("History").font(.headline).foregroundStyle(.white)
                         Spacer()
@@ -36,6 +35,7 @@ struct HistorySidebarView: View {
                             Image(systemName: "xmark").imageScale(.medium)
                         }
                         .buttonStyle(.plain).foregroundStyle(.white)
+                        .padding(.vertical, 68)
                     }
 
                     ScrollView {
@@ -45,7 +45,7 @@ struct HistorySidebarView: View {
                                     onSelect(indexValue)
                                     withAnimation(.easeInOut) { isOpen = false }
                                 } label: {
-                                    Text(round.title.isEmpty ? "Untitled Round" : round.title)
+                                    Text(round.title.isEmpty ? "Private Round" : round.title)
                                         .foregroundStyle(.white)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 10)
