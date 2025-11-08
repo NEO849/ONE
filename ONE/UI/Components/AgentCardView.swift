@@ -9,7 +9,6 @@ import SwiftUI
 
 /// Einzelne Agenten-Karte mit eigenem Hintergrund, Rahmen & Glas.
 /// Beziehung: Wird im StackedAgentCardsView eingesetzt.
-/// 
 struct AgentCardView: View {
     let agent: AgentType
     let bodyText: String
@@ -60,4 +59,12 @@ struct AgentCardView: View {
         Image("background").resizable().scaledToFill()
     )
     .environment(\.colorScheme, .dark)
+}
+
+#Preview("AgentCard – Leerzustand") {
+    // Zweiter Preview zur Überprüfung des Zustands, wenn die Antwort noch aussteht.
+    AgentCardView(agent: .claude, bodyText: "")
+        .padding(24)
+        .background(Color.black.opacity(0.8))
+        .environment(\.colorScheme, .dark)
 }

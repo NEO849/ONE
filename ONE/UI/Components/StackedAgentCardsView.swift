@@ -16,7 +16,7 @@ struct StackedAgentCardsView: View {
 
     @State private var frontIndex: Int = AgentType.allCases.count - 1
     private let offsetX: CGFloat = 36
-    private let offsetY: CGFloat = 44
+    private let offsetY: CGFloat = 54
 
     var body: some View {
         let agents = AgentType.allCases
@@ -41,24 +41,25 @@ struct StackedAgentCardsView: View {
                     }
             }
         }
-        .padding(.top, offsetY * CGFloat(agents.count))
-        .padding(.leading, offsetX * CGFloat(agents.count))
-        .frame(maxWidth: .infinity, minHeight: 560, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 #Preview("StackedAgentCards – versetzt & klickbar") {
-    // Deutsch: Step mit drei Agentenantworten + finaler ChatGPT-Antwort.
+    // Step mit drei Agentenantworten + finaler ChatGPT-Antwort.
     var step = ChatStep(userPrompt: "Wie gliedere ich ein SwiftUI-Projekt?")
     step.setAgentReply(agent: .gemini,  text: "Feature-Gruppierung: Features/<Name>/{Model,VM,View}.")
     step.setAgentReply(agent: .claude,  text: "Shared-Layer: Services/Repositories zentralisieren.")
     step.setAgentReply(agent: .mistral, text: "Einfach starten, später skalieren.")
     step.setFinalReply(text: "Vernünftig: Feature-Ordner plus zentrale Shared-Komponenten.")
 
-    return StackedAgentCardsView(step: step)
-        .padding(24)
-        .background(
-            Image("background").resizable().scaledToFill()
-        )
+    return ZStack {
+        Image("background")
+            .resizable()
+            .scaledToFill()
+            .ignoresSafeArea()
+
+        StackedAgentCardsView(step: step)
+    }
         .environment(\.colorScheme, .dark)
 }
