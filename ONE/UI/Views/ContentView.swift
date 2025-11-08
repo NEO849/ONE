@@ -7,88 +7,89 @@
 
 import SwiftUI
 
-///  Screen-Composer – verbindet TopBar, Sidebar, Steps (mit Karten) & Eingabe.
-/// Beziehungen:
-/// - Hält "ConversationViewModel" als @StateObject (eine Quelle der Wahrheit).
-/// - Vertikales Scrollen mit stabilen IDs + optionalem Auto-Scroll zum letzten Step.
+/// Hauptansicht des ONE-Chats – verbindet Menüleiste, Verlauf (Steps) und Eingabefeld.
 struct ContentView: View {
     
+    // Fokus für das Eingabefeld (steuert Tastatur)
+    @FocusState private var isInputFocused: Bool
     @StateObject private var viewModel: ConversationViewModel
     
     init() {
-        _viewModel = StateObject(wrappedValue: ConversationViewModel(service: MockConversationService()))
+        _viewModel = StateObject(
+            wrappedValue: ConversationViewModel(service: MockConversationService())
+        )
     }
     
     var body: some View {
-        ZStack {
-            Image("background")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
+        GeometryReader { geo in
+            ZStack {
+                Image("background")
+                    .resizable()
+                    .scaledToFill()
+                    .ignoresSafeArea()
                 
-                // TOP: Menüleiste
-                TopBarView(
-                    appLogoAsset: "logo",
-                    appNameAsset: "onetext",
-                    onToggleSidebar: { viewModel.toggleSidebar() },
-                    onNewRound: { viewModel.createNewRound() }
-                )
-                
-                // MITTE: Steps der aktuellen Runde – stabil & auto-scrollbar
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            // Helper "currentSteps"
-                            ForEach(viewModel.currentSteps, id: \.id) { (step: ChatStep) in
-                                VStack(alignment: .leading, spacing: 12) {
-                                    UserPromptBubbleView(promptText: step.userPrompt)
-                                    StackedAgentCardsView(step: step)
+                VStack(spacing: 0) {
+                    // Menüleiste (bleibt immer sichtbar)
+                    TopBarView(
+                        appLogoAsset: "logo",
+                        appNameAsset: "onetext",
+                        onToggleSidebar: { viewModel.toggleSidebar() },
+                        onNewRound: { viewModel.createNewRound() }
+                    )
+                    //                    .padding(.top, geo.safeAreaInsets.top + 8)
+                    .padding(.bottom, 14)
+                    
+                    //                    Divider().background(Color.white)
+                    // Scrollbarer Gesprächsverlauf (Steps)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                ForEach(viewModel.currentSteps, id: \.id) { step in
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        UserPromptBubbleView(promptText: step.userPrompt)
+                                        StackedAgentCardsView(step: step)
+                                    }
+                                    .padding(.bottom, 164)
+                                    .id(step.id)
                                 }
-                                .padding(.horizontal, 12)
-                                .id(step.id) // stabile ID für Scroll-Anchor
+                            }
+                            //    .padding(.bottom, 16)
+                        }
+                        .onChange(of: viewModel.currentLastStepId) {
+                            if let stepId = viewModel.currentLastStepId {
+                                withAnimation(.easeInOut) {
+                                    proxy.scrollTo(stepId, anchor: .bottom)
+                                }
                             }
                         }
-                        .padding(.vertical, 8)
+                        .keyboardDismissable($isInputFocused) // ✅ Modifier zum Schließen
                     }
-                    // Auto-Scroll auf Basis der ID des letzten Steps
-                    .onChange(of: viewModel.currentLastStepId) {
-                        if let stepId = viewModel.currentLastStepId {
-                               withAnimation(.easeInOut) {
-                                   proxy.scrollTo(stepId, anchor: .bottom)
-                               }
-                           }
-                       }
-                }
-                
-                // UNTEN: Eingabe (Free-Flow)
-                HStack(spacing: 12) {
-                    TextField("User prompt …", text: $viewModel.inputText, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
                     
-                    Button(action: { viewModel.runFreeFlowStep() }) {
-                        Text(viewModel.isBusy ? "Running…" : "Send")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.isBusy || viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    // Eingabefeld – immer ganz unten über der Tastatur sichtbar
+                    GlassCardInputField(
+                        text: $viewModel.inputText,
+                        isBusy: viewModel.isBusy,
+                        onSend: {
+                            guard !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+                            viewModel.runFreeFlowStep()
+                            isInputFocused = false
+                        },
+                        isInputFocused: $isInputFocused
+                    )
+                    .padding(.bottom, 8)
                 }
-                .padding(12)
-                .glassCard(cornerRadius: 16)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                .padding(.horizontal, 16) // Zentrales  Padding
+                .padding(.trailing, 114)
+                
+                // Sidebar als Overlay
+                HistorySidebarView(
+                    rounds: viewModel.rounds,
+                    isOpen: $viewModel.isSidebarOpen,
+                    onSelect: { index in viewModel.selectRound(at: index) }
+                )
             }
-            
-            // LINKER OVERLAY: Sidebar mit History
-            HistorySidebarView(
-                rounds: viewModel.rounds,
-                isOpen: $viewModel.isSidebarOpen,
-                onSelect: { indexValue in viewModel.selectRound(at: indexValue) }
-            )
+            .ignoresSafeArea(.keyboard) // Verhindert verschieben
         }
-        .ignoresSafeArea(.keyboard)
     }
 }
 
