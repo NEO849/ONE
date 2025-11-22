@@ -13,16 +13,12 @@ import SwiftUI
 /// - Nutzt Binding für den Text und eine Callback-Funktion beim Absenden.
 struct GlassCardInputField: View {
 
-    // 🔹 Zwei-Wege-Binding zum Eingabetext
+    // Zwei-Wege-Binding zum Eingabetext
     @Binding var text: String
-
-    // 🔹 Zeigt an, ob ein Request gerade läuft (z. B. Antwort-Generierung)
     var isBusy: Bool = false
-
-    // 🔹 Aktion, die ausgeführt wird, wenn der Nutzer sendet
     var onSend: () -> Void
 
-    // 🔹 Fokusbindung (steuert Tastatur-Status)
+    // Fokusbindung (steuert Tastatur-Status)
     @FocusState.Binding var isInputFocused: Bool
 
     private let accentBlue: Color = .blue
@@ -32,7 +28,6 @@ struct GlassCardInputField: View {
         let isTextEmpty = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         HStack(spacing: 16) {
-            // ✏️ Eingabefeld
             TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .foregroundColor(.white.opacity(0.9))
@@ -99,7 +94,6 @@ struct GlassCardInputField: View {
                 },
                 isInputFocused: $isPreviewFocused // Fokus-Binding für Preview
             )
-          //  .padding(.horizontal, 32)
             .padding(.bottom, 8)
         }
     }

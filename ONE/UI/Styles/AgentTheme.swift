@@ -13,14 +13,28 @@ struct AgentTheme: Equatable {
     let accentColor: Color
     let cornerRadius: CGFloat
     let strokeWidth: CGFloat
+    
+    /// Zentraler Init mit Default-Werten für alle Agenten
+    init(
+        backgroundAssetName: String,
+        accentColor: Color,
+        cornerRadius: CGFloat = 12,
+        strokeWidth: CGFloat = 1
+    ) {
+        self.backgroundAssetName = backgroundAssetName
+        self.accentColor = accentColor
+        self.cornerRadius = cornerRadius
+        self.strokeWidth = strokeWidth
+    }
 }
+
 extension AgentType {
     var theme: AgentTheme {
         switch self {
-        case .chatgpt: return .init(backgroundAssetName: "bg_gpt",     accentColor: .blue,      cornerRadius: 12, strokeWidth: 1)
-        case .gemini:  return .init(backgroundAssetName: "bg_gemini",  accentColor: .teal,      cornerRadius: 12, strokeWidth: 1)
-        case .claude:  return .init(backgroundAssetName: "bg_claude",  accentColor: .secondary, cornerRadius: 12, strokeWidth: 1)
-        case .mistral: return .init(backgroundAssetName: "bg_mistral", accentColor: .gray,      cornerRadius: 12, strokeWidth: 1)
+        case .chatgpt: return AgentTheme(backgroundAssetName: "bg_gpt",     accentColor: .blue)
+        case .gemini:  return AgentTheme(backgroundAssetName: "bg_gemini",  accentColor: .teal)
+        case .claude:  return AgentTheme(backgroundAssetName: "bg_claude",  accentColor: .secondary)
+        case .mistral: return AgentTheme(backgroundAssetName: "bg_mistral", accentColor: .gray)
         }
     }
 }

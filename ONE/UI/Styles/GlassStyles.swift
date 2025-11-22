@@ -49,3 +49,18 @@ struct GlassDivider: View {
             .padding(.horizontal, 8)
     }
 }
+
+/// Verticaler Divider
+struct GlassVerticalDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.18))             // Grundlinie glasig
+            .frame(width: 1)                             // senkrechte Linie, 1pt breit
+            .overlay(
+                Rectangle()
+                    .fill(Color.white.opacity(0.05))     // feiner Highlight-Streifen
+                    .frame(width: 0.5)
+            )
+            .padding(.vertical, 8)                       // oben/unten etwas Luft
+    }
+}
