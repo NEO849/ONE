@@ -34,8 +34,9 @@ struct TopBarView: View {
                 Image(appNameAsset)
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 48)
+                    .frame(height: 56)
             }
+          //  .padding(.horizontal, 28) // 🔹 vertikales Padding für bessere Klickfläche
             
             Spacer() // 🔹 drückt rechten Bereich zuverlässig nach rechts
             
@@ -49,14 +50,13 @@ struct TopBarView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-                .padding(.all, 10)
-                .glassCard(cornerRadius: 12, borderColor: .blue)
+                .padding(.all, 8)
+                .glassCard(cornerRadius: 10, borderColor: .blue)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.gray)
         }
-        .frame(maxWidth: .infinity)          // 🔹 TopBar nimmt immer volle Breite
-        .padding(.horizontal, 16)            // 🔹 gleichmäßiges Seiten-Padding statt fixer Werte
+        .padding(.horizontal, 42)
     }
 }
 

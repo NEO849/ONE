@@ -19,14 +19,12 @@ struct AgentCardView: View {
         ZStack {
             Image(theme.backgroundAssetName)
                 .resizable().scaledToFill()
-                .overlay(Color.black.opacity(0.10))
-                .clipped()
 
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .stroke(theme.accentColor.opacity(0.85), lineWidth: theme.strokeWidth)
-                .shadow(color: theme.accentColor.opacity(0.45), radius: 14, x: 0, y: 6)
+            RoundedRectangle(cornerRadius: theme.cornerRadius)
+                .stroke(theme.accentColor.opacity(0.85))
+             
 
-            VStack(spacing: 12) {
+            VStack(spacing: 2) {
                 Text(agent.displayName)
                     .font(.headline)
                     .foregroundStyle(theme.accentColor)
@@ -34,14 +32,14 @@ struct AgentCardView: View {
                 Text(bodyText.isEmpty ? "… wartet auf Antwort …" : bodyText)
                     .font(.callout)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.92))
-                    .padding(.horizontal, 12)
+                    .foregroundStyle(.white.opacity(0.82))
+                    .padding(.horizontal, 42)
             }
-            .padding(18)
         }
         .frame(width: 260, height: 320)
         .glassCard(cornerRadius: theme.cornerRadius)
-        .accessibilityLabel(Text("\(agent.displayName) Karte"))
+//        .accessibilityLabel(Text("\(agent.displayName) Karte"))
+        .padding(.leading, 22)
     }
 }
 
