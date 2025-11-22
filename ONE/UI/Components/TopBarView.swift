@@ -16,28 +16,30 @@ struct TopBarView: View {
     let appNameAsset: String
     let onToggleSidebar: () -> Void
     let onNewRound: () -> Void
-
-
+    
     var body: some View {
-        HStack(spacing: 12) {
-            Button(action: onToggleSidebar) {
-                Image(appLogoAsset)
+        HStack {
+            // Linker Bereich: Logo + Name
+            HStack(spacing: 10) {
+                Button(action: onToggleSidebar) {
+                    Image(appLogoAsset)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                
+                Image(appNameAsset)
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 32)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .frame(height: 48)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.white)
-
-            Image(appNameAsset)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 64)
-                .layoutPriority(1)
-
-            Spacer(minLength: 8)
-
+            
+            Spacer() // 🔹 drückt rechten Bereich zuverlässig nach rechts
+            
+            // Rechter Bereich: New Chat
             Button(action: onNewRound) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.bubble.fill")
@@ -47,20 +49,17 @@ struct TopBarView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .glassCard(cornerRadius: 22, borderColor: .blue)
-//                .background(
-//                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-//                        .fill(.blue.opacity(0.25))
-//                )
+                .padding(.all, 10)
+                .glassCard(cornerRadius: 12, borderColor: .blue)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.gray)
         }
+        .frame(maxWidth: .infinity)          // 🔹 TopBar nimmt immer volle Breite
+        .padding(.horizontal, 16)            // 🔹 gleichmäßiges Seiten-Padding statt fixer Werte
     }
-  
 }
+
 #Preview("TopBar – dunkel") {
     ZStack {
         Image("background")
@@ -74,7 +73,6 @@ struct TopBarView: View {
             onToggleSidebar: {},
             onNewRound: {}
         )
-      //  .padding(.horizontal, 76)
     }
     .environment(\.colorScheme, .dark)
 }

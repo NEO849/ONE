@@ -20,7 +20,7 @@ struct GlassCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(Color.white.opacity(0.10))      // leichte Helligkeit
                     .background(.ultraThinMaterial)       // eigentlicher Glas-Effekt
-            )
+            )  
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -30,7 +30,7 @@ struct GlassCardModifier: ViewModifier {
 }
 
 extension View {
-    /// Einheitlicher Glasstil – optional mit farbigem Rahmen.
+    /// Einheitlicher Glasstil
     func glassCard(
         cornerRadius: CGFloat = 24,
         borderColor: Color = .white

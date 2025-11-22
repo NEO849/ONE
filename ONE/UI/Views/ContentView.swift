@@ -7,11 +7,14 @@
 
 import SwiftUI
 
-/// Hauptansicht des ONE-Chats – verbindet Menüleiste, Verlauf (Steps) und Eingabefeld.
+/// Hauptansicht des ONE-Chats – verbindet Menüleiste, Gesprächsverlauf und Eingabefeld.
+/// MVVM: ViewModel ist die Source of Truth, die View reagiert nur auf Zustandsänderungen.
 struct ContentView: View {
     
     // Fokus für das Eingabefeld (steuert Tastatur)
     @FocusState private var isInputFocused: Bool
+    
+    // ViewModel bleibt in der obersten View als Source of Truth
     @StateObject private var viewModel: ConversationViewModel
     
     init() {
@@ -21,26 +24,25 @@ struct ContentView: View {
     }
     
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
+        GeometryReader { geometryProxy in // geometryProxy statt "geo", damit Name >= 4 Zeichen
+            ZStack(alignment: .top) { // 🔹 Wichtig: ZStack oben ausrichten, nicht zentrieren
                 Image("background")
                     .resizable()
                     .scaledToFill()
-                    .ignoresSafeArea()
+                    .ignoresSafeArea() // Background darf komplett hinter alles
                 
                 VStack(spacing: 0) {
-                    // Menüleiste (bleibt immer sichtbar)
+                    // Menüleiste oben
                     TopBarView(
                         appLogoAsset: "logo",
                         appNameAsset: "onetext",
                         onToggleSidebar: { viewModel.toggleSidebar() },
                         onNewRound: { viewModel.createNewRound() }
                     )
-                    //                    .padding(.top, geo.safeAreaInsets.top + 8)
+                    .padding(.top, geometryProxy.safeAreaInsets.top) // 🔹 Safe-Area oben sauber berücksichtigen
                     .padding(.bottom, 14)
                     
-                    //                    Divider().background(Color.white)
-                    // Scrollbarer Gesprächsverlauf (Steps)
+                    // Scrollbarer Gesprächsverlauf
                     ScrollViewReader { proxy in
                         ScrollView {
                             VStack(alignment: .leading, spacing: 20) {
@@ -53,7 +55,6 @@ struct ContentView: View {
                                     .id(step.id)
                                 }
                             }
-                            //    .padding(.bottom, 16)
                         }
                         .onChange(of: viewModel.currentLastStepId) {
                             if let stepId = viewModel.currentLastStepId {
@@ -62,37 +63,41 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .keyboardDismissable($isInputFocused) // ✅ Modifier zum Schließen
+                        .keyboardDismissable($isInputFocused) // ✅ Nur Tap zum Schließen, beeinflusst Layout nicht
                     }
                     
-                    // Eingabefeld – immer ganz unten über der Tastatur sichtbar
-                    GlassCardInputField(
-                        text: $viewModel.inputText,
-                        isBusy: viewModel.isBusy,
-                        onSend: {
-                            guard !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-                            viewModel.runFreeFlowStep()
-                            isInputFocused = false
-                        },
-                        isInputFocused: $isInputFocused
-                    )
-                    .padding(.bottom, 8)
+                    // Eingabefeld unten – wird über safeAreaInset sauber an Tastatur gekoppelt
                 }
-                .padding(.horizontal, 16) // Zentrales  Padding
-                .padding(.trailing, 114)
-                
-                // Sidebar als Overlay
-                HistorySidebarView(
-                    rounds: viewModel.rounds,
-                    isOpen: $viewModel.isSidebarOpen,
-                    onSelect: { index in viewModel.selectRound(at: index) }
+                .frame( // 🔹 EXTREM wichtig: VStack auf volle Breite/Höhe zwingen
+                    maxWidth: .infinity,
+                    maxHeight: .infinity,
+                    alignment: .top
                 )
             }
-            .ignoresSafeArea(.keyboard) // Verhindert verschieben
+            // Eingabefeld als Safe-Area-Inset → bleibt automatisch über Tastatur
+            .safeAreaInset(edge: .bottom) {
+                GlassCardInputField(
+                    text: $viewModel.inputText,
+                    isBusy: viewModel.isBusy,
+                    onSend: {
+                        // Guard verhindert leere Nachrichten
+                        guard !viewModel.inputText
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                            .isEmpty
+                        else { return }
+                        
+                        viewModel.runFreeFlowStep() // VM macht Logik
+                        isInputFocused = true       // Fokus bleibt für schnelle Folgeeingabe
+                    },
+                    isInputFocused: $isInputFocused
+                )
+                .padding(.horizontal, 12) // 🔹 Gleichmäßige Seitenabstände
+                .padding(.bottom, 8)
+                .background(.clear)
+            }
         }
     }
 }
-
 #Preview("Content – Mockdaten, versetzte Agenten-Karten") {
     ContentView()
         .environment(\.colorScheme, .dark)

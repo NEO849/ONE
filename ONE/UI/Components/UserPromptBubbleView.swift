@@ -7,22 +7,33 @@
 
 import SwiftUI
 
-/// Gläserne Bubble für die Benutzer-Eingabe eines Steps.
+/// 🗣 Darstellung der Eingabe des Nutzers als Bubble.
+/// Wird immer vor den Antworten der Agenten dargestellt.
 struct UserPromptBubbleView: View {
-    let promptText: String
+    let promptText: String  // 💬 Inhalt der Nutzereingabe
+
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .bottom) {
+            // 👤 Icon links neben dem Text
             Image(systemName: "person.fill")
-                .imageScale(.large)
-                .foregroundStyle(.gray.opacity(0.9))
-                .frame(width: 24)
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.7))
+                .padding(6)
+                .background(Color.white.opacity(0.15))
+                .clipShape(Circle())
+
             Text(promptText)
-                .font(.body)
-                .foregroundStyle(.gray)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.callout)
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .padding(12)
-        .glassCard(cornerRadius: 22, borderColor: .blue)    }
+//        .padding(.horizontal, 12)          // ⬅️ neuer Rahmen
+//        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)       // ⬅️ zentriert sich automatisch
+    }
 }
 
 #Preview("UserPromptBubble – Beispiel") {

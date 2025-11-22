@@ -12,22 +12,30 @@ import SwiftUI
 /// - Wird in der ContentView unten als Eingabe für neue Prompts eingebunden.
 /// - Nutzt Binding für den Text und eine Callback-Funktion beim Absenden.
 struct GlassCardInputField: View {
+
+    // 🔹 Zwei-Wege-Binding zum Eingabetext
     @Binding var text: String
+
+    // 🔹 Zeigt an, ob ein Request gerade läuft (z. B. Antwort-Generierung)
     var isBusy: Bool = false
+
+    // 🔹 Aktion, die ausgeführt wird, wenn der Nutzer sendet
     var onSend: () -> Void
-    
-    @FocusState.Binding var isInputFocused: Bool  // 🔹 Fokuszustand wird von außen gesetzt
-    
+
+    // 🔹 Fokusbindung (steuert Tastatur-Status)
+    @FocusState.Binding var isInputFocused: Bool
+
     private let accentBlue: Color = .blue
 
     var body: some View {
+        // Prüft, ob das Textfeld leer ist
         let isTextEmpty = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
-        HStack(spacing: 22) {
-            // Textfeld mit Fokusbindung
+        HStack(spacing: 16) {
+            // ✏️ Eingabefeld
             TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
-                .foregroundColor(.gray)
+                .foregroundColor(.white.opacity(0.9))
                 .padding(12)
                 .background(.ultraThinMaterial)
                 .cornerRadius(18)
@@ -36,19 +44,19 @@ struct GlassCardInputField: View {
                         .stroke(accentBlue.opacity(0.45), lineWidth: 1)
                         .shadow(color: accentBlue.opacity(0.3), radius: 6)
                 )
-                .padding(.leading, 12)
+                .focused($isInputFocused)
                 .submitLabel(.send)
-                .focused($isInputFocused)  // 🔹 Fokusbindung
                 .onSubmit {
                     guard !isTextEmpty, !isBusy else { return }
                     onSend()
-                    isInputFocused = false // 🔹 Fokus entfernen → Tastatur schließen
+                    isInputFocused = false
                 }
 
+            // 📨 Senden-Button
             Button {
                 guard !isTextEmpty, !isBusy else { return }
                 onSend()
-                isInputFocused = false // 🔹 Fokus entfernen
+                isInputFocused = false
             } label: {
                 Image(systemName: isBusy ? "hourglass" : "paperplane.fill")
                     .font(.title2)
@@ -56,16 +64,14 @@ struct GlassCardInputField: View {
                     .rotationEffect(.degrees(isBusy ? 180 : 0))
                     .animation(.easeInOut(duration: 0.3), value: isBusy)
             }
-           
             .disabled(isBusy || isTextEmpty)
-            .opacity(isBusy || isTextEmpty ? 0.5 : 1)
-            .padding(.trailing, 12)
+            .opacity(isBusy || isTextEmpty ? 0.5 : 1.0)
         }
-//        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .glassCard(cornerRadius: 22, borderColor: accentBlue)
-        .frame(maxWidth: .infinity)
-        
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
+        .cornerRadius(22)
+        .shadow(radius: 4)
     }
 }
 

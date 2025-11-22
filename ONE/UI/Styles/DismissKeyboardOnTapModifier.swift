@@ -7,23 +7,22 @@
 
 import SwiftUI
 
-/// Dismiss-Modifier für alle Views – schließt Tastatur bei Tap außerhalb – funktioniert mit @FocusState
+/// Globaler Modifier zum Schließen der Tastatur, wenn außerhalb getippt wird.
+/// Funktioniert mit jedem View, das `@FocusState` nutzt.
 struct DismissKeyboardOnTapModifier: ViewModifier {
     var isFocused: FocusState<Bool>.Binding
 
     func body(content: Content) -> some View {
         content
-            .gesture(
-                TapGesture()
-                    .onEnded {
-                        isFocused.wrappedValue = false
-                    }
-            )
+            .contentShape(Rectangle()) // 🔹 Macht den gesamten Bereich „tappbar“
+            .onTapGesture {
+                isFocused.wrappedValue = false // ⛔ Fokus entfernen = Tastatur schließen
+            }
     }
 }
 
 extension View {
-    /// Erlaubt ".keyboardDismissable($isInputFocused)" auch mit "@FocusState"
+    /// Erlaubt `.keyboardDismissable($isInputFocused)` in jeder View
     func keyboardDismissable(_ isFocused: FocusState<Bool>.Binding) -> some View {
         self.modifier(DismissKeyboardOnTapModifier(isFocused: isFocused))
     }
