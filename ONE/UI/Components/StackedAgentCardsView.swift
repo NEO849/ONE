@@ -30,7 +30,7 @@ struct StackedAgentCardsView: View {
                     return step.reply(for: agent) ?? ""
                 }()
 
-                AgentCardView(agent: agent, bodyText: replyText)
+                AgentCardView(agent: agent, agentResponse: replyText)
                     .offset(x: CGFloat(indexValue) * offsetX, y: CGFloat(indexValue) * offsetY)
                     .scaleEffect(frontIndex == indexValue ? 1.0 : 0.94) // Fokus-Karte größer
                     .shadow(radius: frontIndex == indexValue ? 18 : 8)

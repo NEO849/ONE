@@ -9,60 +9,102 @@ import SwiftUI
 
 /// Einzelne Agenten-Karte mit eigenem Hintergrund, Rahmen & Glas.
 /// Beziehung: Wird im StackedAgentCardsView eingesetzt.
+/// Keine Magic Numbers im Body (wartbar + konsistent).
 struct AgentCardView: View {
+    
     let agent: AgentType
-    let bodyText: String
-
+    let agentResponse: String
+    
+    /// Theme des Agents (Farben, Radius, Stroke).
+    private var theme: AgentTheme {
+        agent.theme
+    }
+    
+    /// Placeholder-Text falls Antwort leer ist.
+    private var placeholder: String {
+        agentResponse.isEmpty ? "… wartet auf Antwort …" : agentResponse
+    }
+    
+    // MARK: - Layout Konfiguration (zentrale Werte, keine Redundanz)
+    private let cardWidthValue: CGFloat = 260
+    private let cardHeightValue: CGFloat = 320
+    private let nameRailWidthValue: CGFloat = 66
+    
     var body: some View {
-        let theme = agent.theme
-
         ZStack {
+            // Hintergrundbild – skaliert und an Kartenradius geclippt
             Image(theme.backgroundAssetName)
-                .resizable().scaledToFill()
-
+                .resizable()
+                .scaledToFill()
+                .clipShape(
+                    RoundedRectangle(cornerRadius: theme.cornerRadius)
+                )
+            
+            // Rahmen passend zum Theme
             RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(theme.accentColor.opacity(0.85))
-             
-
-            VStack(spacing: 2) {
-                Text(agent.displayName)
-                    .font(.headline)
-                    .foregroundStyle(theme.accentColor)
-
-                Text(bodyText.isEmpty ? "… wartet auf Antwort …" : bodyText)
-                    .font(.callout)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.82))
-                    .padding(.horizontal, 42)
+                .stroke(
+                    theme.accentColor.opacity(0.85),
+                    lineWidth: theme.strokeWidth
+                )
+            
+            // Rail links + Divider + Content rechts
+            HStack(spacing: 0) {
+                
+                LeftAgentNameRailView(
+                    agentName: agent.displayName,
+                    accentColor: theme.accentColor,
+                    railWidthValue: nameRailWidthValue
+                )
+                VStack() {
+                    Spacer(minLength: 14)
+                    ScrollView(showsIndicators: false) {
+                        Text(placeholder)
+                            .font(.callout)
+                            .multilineTextAlignment(.leading)
+                            .foregroundStyle(.white.opacity(0.86))
+                            .padding(.top, 24)
+                            .padding(.horizontal, 28)
+                            .padding(.trailing, 10)
+                    }
+                    Spacer(minLength: 20)
+                }
             }
         }
-        .frame(width: 260, height: 320)
+        .frame(width: cardWidthValue, height: cardHeightValue)
         .glassCard(cornerRadius: theme.cornerRadius)
-//        .accessibilityLabel(Text("\(agent.displayName) Karte"))
-        .padding(.leading, 22)
+        .clipped()
     }
 }
 
-#Preview("AgentCard – alle vier") {
+#Preview("AgentCard – ANtworten") {
     ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 16) {
-            AgentCardView(agent: .chatgpt, bodyText: "Final check: Plausibel, klar strukturiert.")
-            AgentCardView(agent: .gemini,  bodyText: "Research: Quellen X/Y/Z, Fakten geprüft.")
-            AgentCardView(agent: .claude,  bodyText: "Structure: Schritt 1–3 mit Klarheit.")
-            AgentCardView(agent: .mistral, bodyText: "Concise: Kernaussagen in 3 Sätzen.")
+            AgentCardView(agent: .claude, agentResponse: "Den kompletten Inhalt durch die neue AgentCardView ersetzen")
+            AgentCardView(agent: .gemini,  agentResponse: "bei versetzten Karten ist ein vertikaler Agenten-Name links perfekt, weil er immer sichtbar bleibt, selbst wenn Karten überlappen bei versetzten Karten ist ein vertikaler Agenten-Name links perfekt, weil er immer sichtbar bleibt, selbst wenn Karten überlappen bei versetzten Karten ist ein vertikaler Agenten-Name links perfekt, weil er immer sichtbar bleibt, selbst wenn Karten überlappen bei versetzten Karten ist ein vertikaler Agenten-Name links perfekt, weil er immer sichtbar bleibt, selbst wenn Karten überlappen")
+            AgentCardView(agent: .claude,  agentResponse: "Das macht das Header-Layout unnötig groß und kann zu komischen Abständen führen.")
+            AgentCardView(agent: .mistral, agentResponse: "Innen-Einzug der Texte erhöhen → Padding nur bei den Zeilen, nicht bei der ganzen Sidebar")
         }
         .padding(20)
     }
     .background(
-        Image("background").resizable().scaledToFill()
+        Image("background").resizable().scaledToFill().ignoresSafeArea()
     )
     .environment(\.colorScheme, .dark)
 }
 
 #Preview("AgentCard – Leerzustand") {
-    // Zweiter Preview zur Überprüfung des Zustands, wenn die Antwort noch aussteht.
-    AgentCardView(agent: .claude, bodyText: "")
-        .padding(24)
-        .background(Color.black.opacity(0.8))
-        .environment(\.colorScheme, .dark)
+    // Wenn die Antwort noch aussteht.
+    ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 16) {
+            AgentCardView(agent: .claude, agentResponse: "")
+            AgentCardView(agent: .gemini,  agentResponse: "")
+            AgentCardView(agent: .claude,  agentResponse: "")
+            AgentCardView(agent: .mistral, agentResponse: "")
+        }
+        .padding(20)
+    }
+    .background(
+        Image("background").resizable().scaledToFill().ignoresSafeArea()
+    )
+    .environment(\.colorScheme, .dark)
 }
