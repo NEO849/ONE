@@ -11,8 +11,8 @@ import SwiftUI
 /// MVVM: ViewModel ist die Source of Truth, die View reagiert nur auf Zustandsänderungen.
 struct ContentView: View {
     
-    @FocusState private var isInputFocused: Bool              // Fokus für Tastatursteuerung
-    @StateObject private var viewModel: ConversationViewModel // Source of Truth
+    @FocusState private var isInputFocused: Bool
+    @StateObject private var viewModel: ConversationViewModel
     
     init() {
         _viewModel = StateObject(
@@ -21,51 +21,43 @@ struct ContentView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .topLeading) { // Oben/links verankern
+        ZStack(alignment: .topLeading) {
+            
             Image("background")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
             
-            VStack(spacing: 14) {
+            VStack(spacing: 0) {
+                
                 TopBarView(
                     appLogoAsset: "logo",
                     appNameAsset: "onetext",
                     onToggleSidebar: { viewModel.toggleSidebar() },
                     onNewRound: { viewModel.createNewRound() }
                 )
-           
+                .padding(.horizontal, 42)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Chat-Verlauf
                 ScrollViewReader { scrollProxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 20) { // ✅ LazyVStack performanter
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(alignment: .leading, spacing: 20) {
                             ForEach(viewModel.currentSteps, id: \.id) { step in
                                 VStack(alignment: .leading, spacing: 12) {
                                     UserPromptBubbleView(promptText: step.userPrompt)
-                                        .frame( // ✅ Bubble darf NICHT die Gesamtbreite schrumpfen
-                                            maxWidth: .infinity,
-                                            alignment: .leading
-                                        )
-                                    
                                     StackedAgentCardsView(step: step)
-                                        .frame( // ✅ Cards ebenfalls volle Breite erlauben
-                                            maxWidth: .infinity,
-                                            alignment: .leading
-                                        )
                                 }
                                 .padding(.bottom, 164)
                                 .id(step.id)
-                                .frame( // ✅ jeder Step nimmt volle Breite ein
-                                    maxWidth: .infinity,
-                                    alignment: .leading
-                                )
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        .frame( // ✅ ganzes Scroll-Content nimmt volle Breite ein
-                            maxWidth: .infinity,
-                            alignment: .leading
-                        )
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 42)
                         .padding(.top, 6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .onChange(of: viewModel.currentLastStepId) {
                         if let stepId = viewModel.currentLastStepId {
@@ -74,22 +66,21 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .keyboardDismissable($isInputFocused) // nur Tap-Dismiss, kein Layout-Einfluss
+                    .scrollDismissesKeyboard(.immediately)
+                    .ignoresSafeArea(.keyboard)              // ScrollView ignoriert Keyboard
                 }
             }
-            .frame( // ✅ Root-VStack zwingend auf Display-Breite/Höhe
-                maxWidth: .infinity,
-                maxHeight: .infinity,
-                alignment: .topLeading
-            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .keyboardDismissable($isInputFocused)           // Tap außerhalb -> Tastatur zu
             
+            // Sidebar als Overlay
             HistorySidebarView(
                 rounds: viewModel.rounds,
                 isOpen: $viewModel.isSidebarOpen,
                 onSelect: { index in viewModel.selectRound(at: index) }
             )
         }
-        .safeAreaInset(edge: .bottom) { // ✅ Eingabe sauber an Tastatur koppeln
+        .safeAreaInset(edge: .bottom) {
             GlassCardInputField(
                 text: $viewModel.inputText,
                 isBusy: viewModel.isBusy,
@@ -100,12 +91,13 @@ struct ContentView: View {
                     else { return }
                     
                     viewModel.runFreeFlowStep()
-                    isInputFocused = true
+                    isInputFocused = false // ✅ Send-Button schließt Tastatur
                 },
                 isInputFocused: $isInputFocused
             )
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
+            .background(.clear)
         }
     }
 }
