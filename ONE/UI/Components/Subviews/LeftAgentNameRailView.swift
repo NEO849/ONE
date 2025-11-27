@@ -13,54 +13,40 @@ import SwiftUI
 /// - Name steht vertikal und bleibt sichtbar auch bei Überlappung.
 struct LeftAgentNameRailView: View {
     
-    let agentNameAssetName: String                                                           // Asset-Name vom Schriftzug (z.B. "gpt_vertical")
-      let accentColor: Color                                                                    // Akzentfarbe vom Agenten (Glow/Farbfilm)
-      let railWidthValue: CGFloat                                                               // Breite der Rail (kommt von der Card)
-      let cornerRadiusValue: CGFloat                                                            // Damit die Rundung zur Card passt (links)
+    // cornerRadiusValue entfernt, da es im Body nicht verwendet wird
+    let agentNameAssetName: String
+    let accentColor: Color
+    // Width of the left rail provided by the caller (keeps layout consistent)
+    let railWidthValue: CGFloat
 
-      var body: some View {
-          ZStack {
+    var body: some View {
+        ZStack {
+            // Hintergrund-Logik (Glas-Effekt)
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Rectangle()
+                        .fill(accentColor.opacity(0.12))
+                )
 
-              Rectangle()                                                                       // Basisfläche der Rail
-                  .fill(.ultraThinMaterial)                                                     // Glas-Material = iOS Blur + Tiefe
-                  .overlay(                                                                     // Farbfilm für Agenten-Identität (subtil)
-                      Rectangle()
-                          .fill(accentColor.opacity(0.12))                                      // Kleiner Farbanteil, damit es nicht “billig” wirkt
-                  )
-                  .overlay(                                                                     // Optionales Light-Gradient für Premium-Look
-                      LinearGradient(
-                          colors: [
-                              .white.opacity(0.10),                                              // Oben etwas heller
-                              .white.opacity(0.02),                                              // Mitte fast neutral
-                              .black.opacity(0.08)                                               // Unten leicht dunkler für Tiefenwirkung
-                          ],
-                          startPoint: .top,
-                          endPoint: .bottom
-                      )
-                  )
+            // Agenten-Schriftzug (Bildgröße optimiert)
+            Image(agentNameAssetName)
+                .resizable()
+                .scaledToFit()
+            
+        }
+        .frame(width: railWidthValue)
+        .frame(maxHeight: .infinity)
+     }
+ }
 
-              Image(agentNameAssetName)                                                          // ✅ Dein Schriftzug-Asset (pro Agent unterschiedlich)
-                  .resizable()                                                                   // Muss skalierbar sein, damit es in die Rail passt
-                  .scaledToFit()                                                                 // Bewahrt Seitenverhältnis (kein Verzerren)
-                  .padding(.vertical, 18)                                                        // Luft oben/unten, damit es nicht “klebt”
-                  .padding(.horizontal, 10)                                                      // Luft links/rechts, damit nichts abgeschnitten wird
-           
-          
-          }
-          .frame(width: railWidthValue)                                                          // Rail bekommt fixe Breite von der Card
-
- 
-      }
-  }
-
-  #Preview {
-      LeftAgentNameRailView(
-          agentNameAssetName: "gpt_vertical",
-          accentColor: .blue,
-          railWidthValue: 66,
-          cornerRadiusValue: 12
-      )
-      .frame(height: 200)
-      .environment(\.colorScheme, .dark)
-      .border(Color.red)
-  }
+   #Preview {
+       LeftAgentNameRailView(
+           agentNameAssetName: "gpt_vertical",
+           accentColor: .blue,
+           railWidthValue: 80
+       )
+       .frame(height: 200)
+       .environment(\.colorScheme, .dark)
+       .border(Color.red)
+   }

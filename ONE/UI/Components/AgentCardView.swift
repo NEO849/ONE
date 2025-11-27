@@ -21,33 +21,30 @@ struct AgentCardView: View {
     }
     
     // MARK: - Layout Konstanten (einheitlich und wartbar)
-    static let cardWidthValue: CGFloat = 260                                             // ✅ auch von außen nutzbar
-    static let cardHeightValue: CGFloat = 320                                            // ✅ auch von außen nutzbar
-    static let nameRailWidthValue: CGFloat = 66                                          // ✅ auch von außen nutzbar
-    private let contentLeadingPaddingValue: CGFloat = 24                                 // Abstand links (im Antwortbereich)
-    private let contentTrailingPaddingValue: CGFloat = 34                                // ✅ mehr Abstand rechts
-    private let contentBottomPaddingValue: CGFloat = 14                                  // Abstand unten
+    static let cardWidthValue: CGFloat = 260
+    static let cardHeightValue: CGFloat = 320
+    static let nameRailWidthValue: CGFloat = 66
+    private let contentLeadingPaddingValue: CGFloat = 24
+    private let contentTrailingPaddingValue: CGFloat = 34
+    private let contentBottomPaddingValue: CGFloat = 14
     
     var body: some View {
         ZStack {
-            Image(theme.backgroundAssetName)                                             // Hintergrundbild
+            Image(theme.backgroundAssetName)
                 .resizable()
                 .scaledToFill()
-                .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius))          // gleiche Rundung wie Card
+                .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius))
             
-            RoundedRectangle(cornerRadius: theme.cornerRadius)                           // Rahmen
+            RoundedRectangle(cornerRadius: theme.cornerRadius)
                 .stroke(theme.accentColor.opacity(0.85), lineWidth: theme.strokeWidth)
             
             HStack(spacing: 0) {
                 LeftAgentNameRailView(
                     agentNameAssetName: theme.verticalAgentName,
                     accentColor: theme.accentColor,
-                    railWidthValue: Self.nameRailWidthValue,
-                    cornerRadiusValue: theme.cornerRadius
+                    railWidthValue: Self.nameRailWidthValue
                 )
-                
-                GlassVerticalDivider()
-                
+                                
                 VStack(spacing: 0) {
                     Spacer().frame(height: 24)
                     
@@ -56,14 +53,14 @@ struct AgentCardView: View {
                             .font(.callout)
                             .multilineTextAlignment(.leading)
                             .foregroundStyle(.white.opacity(0.86))
-                            .padding(.leading, contentLeadingPaddingValue)              // links Abstand
-                            .padding(.trailing, contentTrailingPaddingValue)            // ✅ rechts mehr Abstand
-                            .padding(.bottom, contentBottomPaddingValue)                // unten Abstand
+                            .padding(.leading, contentLeadingPaddingValue)
+                            .padding(.trailing, contentTrailingPaddingValue)
+                            .padding(.bottom, contentBottomPaddingValue)
                     }
                 }
             }
         }
-        .frame(width: Self.cardWidthValue, height: Self.cardHeightValue)                 // feste Kartengröße
+        .frame(width: Self.cardWidthValue, height: Self.cardHeightValue)
         .glassCard(cornerRadius: theme.cornerRadius)
         .clipped()
     }
