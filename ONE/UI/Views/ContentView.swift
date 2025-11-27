@@ -26,13 +26,9 @@ struct ContentView: View {
     // Wenige, klare Abstände (kein Padding-Chaos)
     private let layoutPaddingHorizontalValue: CGFloat = 42                             // TopBar + Chat Kante
     private let inputPaddingHorizontalValue: CGFloat = 12                              // InputBar Kante
-    private let bottomGapExtraValue: CGFloat = 12                                      // kleine Luft über InputBar
-    
-    // InputBar-Höhe (messen wir), damit ScrollView unten Platz bekommt
-    @State private var inputBarHeightValue: CGFloat = 0                                // dynamische Höhe der InputBar
     
     // Feste ID für den unteren Scroll-Anker (immer vorhanden, nie nil)
-    private let bottomAnchorIdentifier: String = "bottomAnchorIdentifier"              // stabile ScrollTo-ID
+    private let bottomAnchorIdentifier: String = "bottomAnchorIdentifier"
     
     init() {
         _viewModel = StateObject(
@@ -53,15 +49,14 @@ struct ContentView: View {
                 TopBarView(
                     appLogoAsset: "logo",
                     appNameAsset: "onetext",
-                    onToggleSidebar: { viewModel.toggleSidebar() },                    // Logik im VM
-                    onNewRound: { viewModel.createNewRound() }                         // Logik im VM
+                    onToggleSidebar: { viewModel.toggleSidebar() },           // Logik im VM
+                    onNewRound: { viewModel.createNewRound() }                // Logik im VM
                 )
-                .padding(.horizontal, layoutPaddingHorizontalValue)                    // einheitliche Kante
+                .padding(.horizontal, layoutPaddingHorizontalValue)    // einheitliche Kante
                 .padding(.top, 8)
                 .padding(.bottom, 14)
-                .frame(maxWidth: .infinity, alignment: .leading)                       // verhindert Zentrier-Sprünge
                 
-                ScrollViewReader { scrollProxy in                                      // ScrollController
+                ScrollViewReader { scrollProxy in    
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 20) {
                             
@@ -71,35 +66,35 @@ struct ContentView: View {
                                     UserPromptBubbleView(promptText: stepValue.userPrompt)
                                     StackedAgentCardsView(step: stepValue)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)      // stabil links
+                                .frame(maxWidth: .infinity, alignment: .leading)  // stabil links
                             }
                             
                             // ✅ Bottom-Anker + Platz für InputBar
                             Color.clear
-                                .frame(height: inputBarHeightValue + bottomGapExtraValue) // Platz reservieren
-                                .id(bottomAnchorIdentifier)                               // fester Anker
+
+                                .id(bottomAnchorIdentifier)               // fester Anker
                         }
-                        .padding(.horizontal, layoutPaddingHorizontalValue)            // gleiche Kante wie TopBar
-                        .padding(.top, 6)
+                        .padding(.horizontal, layoutPaddingHorizontalValue)  // gleiche Kante wie TopBar
+                      
                     }
-                    .scrollDismissesKeyboard(.immediately)                              // Scroll -> Tastatur schließen
+                    .scrollDismissesKeyboard(.immediately)      // Scroll -> Tastatur schließen
                     
                     // Wenn neue Nachricht kommt -> ans Ende
-                    .onChange(of: viewModel.currentSteps.count) { _ in
-                        scrollToBottom(scrollProxy: scrollProxy)                        // zuverlässig zum Anker
+                    .onChange(of: viewModel.currentSteps.count) {
+                        scrollToBottom(scrollProxy: scrollProxy)
                     }
                     
                     // Wenn Tastatur aufgeht -> ans Ende (damit Bubble sichtbar bleibt)
-                    .onChange(of: isInputFocused) { isFocusedValue in
-                        guard isFocusedValue else { return }                            // nur beim Öffnen
-                        DispatchQueue.main.async {                                      // nach Layout-Update scrollen
+                    .onChange(of: isInputFocused) { _, isFocusedValue in
+                        guard isFocusedValue else { return } // nur beim Öffnen
+                        DispatchQueue.main.async {           // nach Layout-Update scrollen
                             scrollToBottom(scrollProxy: scrollProxy)
                         }
                     }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .keyboardDismissable($isInputFocused)                                       // Tippen außerhalb -> Tastatur zu
+            .keyboardDismissable($isInputFocused)    // Tippen außerhalb -> Tastatur zu
             
             HistorySidebarView(
                 rounds: viewModel.rounds,
@@ -116,43 +111,20 @@ struct ContentView: View {
                     guard !trimmedTextValue.isEmpty else { return }
                     
                     viewModel.runFreeFlowStep()
-                    isInputFocused = false                                              // Tastatur schließen
+                    isInputFocused = false                      // Tastatur schließen
                 },
                 isInputFocused: $isInputFocused
             )
             .padding(.horizontal, inputPaddingHorizontalValue)
             .padding(.bottom, 8)
-            .background(
-                GeometryReader { geometryProxy in
-                    Color.clear
-                        .preference(key: InputBarHeightPreferenceKey.self, value: geometryProxy.size.height) // Höhe messen
-                }
-            )
-        }
-        .onPreferenceChange(InputBarHeightPreferenceKey.self) { newHeightValue in
-            // Nur aktualisieren, wenn sinnvoll (verhindert Flackern)
-            if newHeightValue > 0, abs(newHeightValue - inputBarHeightValue) > 0.5 {
-                inputBarHeightValue = newHeightValue
-            }
         }
     }
     
     /// Scrollt immer sicher zum unteren Anker.
     private func scrollToBottom(scrollProxy: ScrollViewProxy) {
         withAnimation(.easeInOut) {
-            scrollProxy.scrollTo(bottomAnchorIdentifier, anchor: .bottom)              // fester Anker -> stabil
+            scrollProxy.scrollTo(bottomAnchorIdentifier, anchor: .bottom)   // fester Anker
         }
-    }
-}
-
-/// PreferenceKey zum Messen der InputBar-Höhe.
-/// Dadurch bekommt die ScrollView unten IMMER genug Platz.
-private struct InputBarHeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        let nextHeightValue = nextValue()
-        if nextHeightValue > 0 { value = nextHeightValue }
     }
 }
 

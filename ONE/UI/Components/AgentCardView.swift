@@ -15,18 +15,22 @@ struct AgentCardView: View {
     let agent: AgentType
     let agentResponse: String
     
+    // NEU: State-Variable für das Sheet
+    @State private var showingSheet: Bool = false
+    
     private var theme: AgentTheme { agent.theme }
     private var placeholder: String {
         agentResponse.isEmpty ? "… wartet auf Antwort …" : agentResponse
     }
     
-    // MARK: - Layout Konstanten (einheitlich und wartbar)
+    // ... Layout Konstanten bleiben gleich ...
     static let cardWidthValue: CGFloat = 260
-    static let cardHeightValue: CGFloat = 320
+    static let cardHeightValue: CGFloat = 140
     static let nameRailWidthValue: CGFloat = 66
     private let contentLeadingPaddingValue: CGFloat = 24
     private let contentTrailingPaddingValue: CGFloat = 34
     private let contentBottomPaddingValue: CGFloat = 14
+    private let maxLines: Int = 4
     
     var body: some View {
         ZStack {
@@ -44,25 +48,45 @@ struct AgentCardView: View {
                     accentColor: theme.accentColor,
                     railWidthValue: Self.nameRailWidthValue
                 )
-                                
-                VStack(spacing: 0) {
+                
+                GlassVerticalDivider()
+                
+                VStack(alignment: .leading, spacing: 0) {
                     Spacer().frame(height: 24)
                     
-                    ScrollView(showsIndicators: false) {
-                        Text(placeholder)
-                            .font(.callout)
-                            .multilineTextAlignment(.leading)
-                            .foregroundStyle(.white.opacity(0.86))
-                            .padding(.leading, contentLeadingPaddingValue)
-                            .padding(.trailing, contentTrailingPaddingValue)
-                            .padding(.bottom, contentBottomPaddingValue)
+                    // 1. Gekürzter Text
+                    Text(placeholder)
+                        .font(.callout)
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(.white.opacity(0.86))
+                        .lineLimit(maxLines) // Beschränkung auf 4 Zeilen
+                        .truncationMode(.tail)
+                        .padding(.leading, contentLeadingPaddingValue)
+                        .padding(.trailing, contentTrailingPaddingValue)
+                        .padding(.bottom, 6) // Abstand zum Button reduzieren
+
+                         Button("Mehr anzeigen") {
+                             showingSheet = true // Sheet öffnen
+                         }
+                         .font(.caption.weight(.semibold))
+                         .foregroundStyle(theme.accentColor) // Akzentfarbe für den Link
+                         .padding(.leading, contentLeadingPaddingValue)
+                         .padding(.trailing, contentTrailingPaddingValue)
+                         .padding(.bottom, contentBottomPaddingValue)
                     }
+
+                    Spacer()
                 }
             }
-        }
+        
         .frame(width: Self.cardWidthValue, height: Self.cardHeightValue)
         .glassCard(cornerRadius: theme.cornerRadius)
         .clipped()
+        .sheet(isPresented: $showingSheet) {
+            FullAnswerAgentSheet(agent: agent, fullResponse: agentResponse)
+                .presentationDragIndicator(.visible)
+                .presentationDetents([.large]) // Sheet füllt den ganzen Bildschirm
+        }
     }
 }
 
