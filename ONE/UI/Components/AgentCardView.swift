@@ -39,10 +39,11 @@ struct AgentCardView: View {
                 .stroke(theme.accentColor.opacity(0.85), lineWidth: theme.strokeWidth)
             
             HStack(spacing: 0) {
-                LeftAgentNameRailView(                                                   // Rail links
-                    agentName: agent.displayName,
+                LeftAgentNameRailView(
+                    agentNameAssetName: theme.verticalAgentName,
                     accentColor: theme.accentColor,
-                    railWidthValue: Self.nameRailWidthValue
+                    railWidthValue: Self.nameRailWidthValue,
+                    cornerRadiusValue: theme.cornerRadius
                 )
                 
                 GlassVerticalDivider()

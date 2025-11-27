@@ -95,20 +95,7 @@ struct HistorySidebarView: View {
 #Preview("Sidebar – geöffnet") {
     let sampleRounds: [ConversationRound] = {
         var r1 = ConversationRound(title: "SwiftUI & MVVM Basics")
-
-        // STEP 1 in Runde 1
-        let stepOneId = r1.addStep(userPrompt: "Wie funktioniert MVVM?")
-        r1.applyToStep(id: stepOneId) { step in
-            step.setFinalReply(text: "Kurz erklärt: Model, ViewModel und View getrennt halten.")
-        }
-
         var r2 = ConversationRound(title: "KI-Agenten – Zusammenarbeit")
-
-        // STEP 1 in Runde 2
-        let stepTwoId = r2.addStep(userPrompt: "Wie orchestrieren sich mehrere KIs?")
-        r2.applyToStep(id: stepTwoId) { step in
-            step.setFinalReply(text: "Gemini/Claude/Mistral liefern Input, ChatGPT prüft alles.")
-        }
 
         return [r1, r2]
     }()
