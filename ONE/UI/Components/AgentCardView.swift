@@ -15,62 +15,54 @@ struct AgentCardView: View {
     let agent: AgentType
     let agentResponse: String
     
-    /// Theme des Agents (Farben, Radius, Stroke).
-    private var theme: AgentTheme {
-        agent.theme
-    }
-    
-    /// Placeholder-Text falls Antwort leer ist.
+    private var theme: AgentTheme { agent.theme }
     private var placeholder: String {
         agentResponse.isEmpty ? "… wartet auf Antwort …" : agentResponse
     }
     
-    // MARK: - Layout Konfiguration (zentrale Werte, keine Redundanz)
-    private let cardWidthValue: CGFloat = 260
-    private let cardHeightValue: CGFloat = 320
-    private let nameRailWidthValue: CGFloat = 66
+    // MARK: - Layout Konstanten (einheitlich und wartbar)
+    static let cardWidthValue: CGFloat = 260                                             // ✅ auch von außen nutzbar
+    static let cardHeightValue: CGFloat = 320                                            // ✅ auch von außen nutzbar
+    static let nameRailWidthValue: CGFloat = 66                                          // ✅ auch von außen nutzbar
+    private let contentLeadingPaddingValue: CGFloat = 24                                 // Abstand links (im Antwortbereich)
+    private let contentTrailingPaddingValue: CGFloat = 34                                // ✅ mehr Abstand rechts
+    private let contentBottomPaddingValue: CGFloat = 14                                  // Abstand unten
     
     var body: some View {
         ZStack {
-            // Hintergrundbild – skaliert und an Kartenradius geclippt
-            Image(theme.backgroundAssetName)
+            Image(theme.backgroundAssetName)                                             // Hintergrundbild
                 .resizable()
                 .scaledToFill()
-                .clipShape(
-                    RoundedRectangle(cornerRadius: theme.cornerRadius)
-                )
+                .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius))          // gleiche Rundung wie Card
             
-            // Rahmen passend zum Theme
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(
-                    theme.accentColor.opacity(0.85),
-                    lineWidth: theme.strokeWidth
-                )
+            RoundedRectangle(cornerRadius: theme.cornerRadius)                           // Rahmen
+                .stroke(theme.accentColor.opacity(0.85), lineWidth: theme.strokeWidth)
             
-            // Rail links + Divider + Content rechts
             HStack(spacing: 0) {
-                
-                LeftAgentNameRailView(
+                LeftAgentNameRailView(                                                   // Rail links
                     agentName: agent.displayName,
                     accentColor: theme.accentColor,
-                    railWidthValue: nameRailWidthValue
+                    railWidthValue: Self.nameRailWidthValue
                 )
-                VStack() {
-                    Spacer(minLength: 14)
+                
+                GlassVerticalDivider()
+                
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 24)
+                    
                     ScrollView(showsIndicators: false) {
                         Text(placeholder)
                             .font(.callout)
                             .multilineTextAlignment(.leading)
                             .foregroundStyle(.white.opacity(0.86))
-                            .padding(.top, 24)
-                            .padding(.horizontal, 28)
-                            .padding(.trailing, 10)
+                            .padding(.leading, contentLeadingPaddingValue)              // links Abstand
+                            .padding(.trailing, contentTrailingPaddingValue)            // ✅ rechts mehr Abstand
+                            .padding(.bottom, contentBottomPaddingValue)                // unten Abstand
                     }
-                    Spacer(minLength: 20)
                 }
             }
         }
-        .frame(width: cardWidthValue, height: cardHeightValue)
+        .frame(width: Self.cardWidthValue, height: Self.cardHeightValue)                 // feste Kartengröße
         .glassCard(cornerRadius: theme.cornerRadius)
         .clipped()
     }

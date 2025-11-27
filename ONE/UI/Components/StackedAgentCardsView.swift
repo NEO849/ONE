@@ -11,28 +11,34 @@ import SwiftUI
 /// Logik:
 /// - Reihenfolge folgt "AgentType.allCases".
 /// - Tippen bringt die Karte nach vorn (Fokus).
+/// Stapel aus Agenten-Karten.
+/// Wichtig:
+/// - offset(...) verändert NICHT die Layout-Größe.
+/// - Deshalb bekommt der Stapel eine berechnete Frame-Größe, damit ScrollView stabil bleibt.
 struct StackedAgentCardsView: View {
-    let step: ChatStep  // 🔄 Aktueller Schritt (Prompt + Agentenantworten)
-
-    @State private var frontIndex: Int = AgentType.allCases.count - 1  // Welche Karte liegt oben?
-    private let offsetX: CGFloat = 36   // ⬅️ Abstand zwischen den Karten auf X-Achse
-    private let offsetY: CGFloat = 54   // ⬇️ Abstand auf Y-Achse
-
+    
+    let step: ChatStep
+    
+    @State private var frontIndex: Int = AgentType.allCases.count - 1                   // welche Karte oben ist
+    
+    private let offsetXValue: CGFloat = 36                                              // horizontaler Versatz
+    private let offsetYValue: CGFloat = 54                                              // vertikaler Versatz
+    
     var body: some View {
-        let agents = AgentType.allCases  // 🔁 Alle Agenten in fester Reihenfolge
-
+        let agentsList = AgentType.allCases                                            // Agenten-Reihenfolge
+        
         ZStack(alignment: .topLeading) {
-            ForEach(agents.indices, id: \.self) { indexValue in
-                let agent = agents[indexValue]
-                let replyText: String = {
-                    // 🔀 ChatGPT hat eigene finale Antwort
-                    if agent == .chatgpt { return step.finalReply ?? "" }
-                    return step.reply(for: agent) ?? ""
+            ForEach(agentsList.indices, id: \.self) { indexValue in
+                let agentValue = agentsList[indexValue]
+                
+                let replyTextValue: String = {                                         // Antwort je Agent
+                    if agentValue == .chatgpt { return step.finalReply ?? "" }
+                    return step.reply(for: agentValue) ?? ""
                 }()
-
-                AgentCardView(agent: agent, agentResponse: replyText)
-                    .offset(x: CGFloat(indexValue) * offsetX, y: CGFloat(indexValue) * offsetY)
-                    .scaleEffect(frontIndex == indexValue ? 1.0 : 0.94) // Fokus-Karte größer
+                
+                AgentCardView(agent: agentValue, agentResponse: replyTextValue)
+                    .offset(x: CGFloat(indexValue) * offsetXValue, y: CGFloat(indexValue) * offsetYValue)
+                    .scaleEffect(frontIndex == indexValue ? 1.0 : 0.94)
                     .shadow(radius: frontIndex == indexValue ? 18 : 8)
                     .zIndex(frontIndex == indexValue ? 1 : 0) // Kartenreihenfolge
                     .onTapGesture {
@@ -46,6 +52,7 @@ struct StackedAgentCardsView: View {
         .frame(maxWidth: .infinity, alignment: .leading) // ⬅️ Karten nach links anordnen
         .padding(.leading, 12) // 📏 Konsistenter linker Abstand
         .padding(.top, 8)      // 🧩 Etwas Luft zur UserBubble
+        .padding(.bottom, 160)
     }
 }
 #Preview("StackedAgentCards – versetzt & klickbar") {

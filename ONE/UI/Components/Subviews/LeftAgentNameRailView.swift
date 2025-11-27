@@ -27,19 +27,7 @@ struct LeftAgentNameRailView: View {
                         .fill(accentColor.opacity(0.10))
                 )
             
-            // Vertikaler Name,  zentriert
-            VStack(spacing: 6) {
-                ForEach(Array(agentName), id: \.self) { characterValue in
-                    Text(String(characterValue))
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundStyle(accentColor.opacity(0.75))
-                        .frame(
-                            width: 30,
-                            height: 30,
-                            alignment: .trailing
-                        )
-                }
-            }
+
         }
         .frame(width: railWidthValue)           // Parent-Breite wird genutzt
     }

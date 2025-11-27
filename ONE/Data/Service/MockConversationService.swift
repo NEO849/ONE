@@ -11,7 +11,7 @@ import Foundation
 /// Free-Flow:
 /// - Alle drei Agenten antworten auf den gleichen Prompt (mit Rollenmarkierung).
 /// - ChatGPT prüft und liefert eine finale Antwort.
-struct MockConversationService: ConversationService {
+struct MockConversationService: ConversationProtocol {
 
     func planAgentPrompts(for userPrompt: String) async throws -> [AgentType: String] {
         let base = userPrompt.trimmingCharacters(in: .whitespacesAndNewlines)

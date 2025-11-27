@@ -16,7 +16,7 @@ import Foundation
 final class ConversationViewModel: ObservableObject {
     
     // Abhängigkeit (DI)
-    private let service: ConversationService
+    private let service: ConversationProtocol
     
     // UI-State (Source of Truth)
     @Published private(set) var rounds: [ConversationRound] = []
@@ -25,7 +25,7 @@ final class ConversationViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var isBusy: Bool = false
     
-    init(service: ConversationService) {
+    init(service: ConversationProtocol) {
         self.service = service
         // Start mit Demo-Daten
         self.rounds = Self.makeInitialRounds()
