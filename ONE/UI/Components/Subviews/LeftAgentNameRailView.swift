@@ -17,7 +17,7 @@ struct LeftAgentNameRailView: View {
     let agentNameAssetName: String
     let accentColor: Color
     // Width of the left rail provided by the caller (keeps layout consistent)
-    let railWidthValue: CGFloat
+    let railImageWidthValue: CGFloat = 46
 
     var body: some View {
         ZStack {
@@ -35,7 +35,7 @@ struct LeftAgentNameRailView: View {
                 .scaledToFit()
             
         }
-        .frame(width: railWidthValue)
+        .frame(width: railImageWidthValue)
         .frame(maxHeight: .infinity)
      }
  }
@@ -44,7 +44,6 @@ struct LeftAgentNameRailView: View {
        LeftAgentNameRailView(
            agentNameAssetName: "gpt_vertical",
            accentColor: .blue,
-           railWidthValue: 80
        )
        .frame(height: 200)
        .environment(\.colorScheme, .dark)

@@ -7,10 +7,11 @@
 
 import SwiftUI
 
-/// Eingabefeld mit Glaseffekt – konsistent zum Design der Chat-Ansicht.
+/// Eingabefeld mit Glaseffekt – optisch passend zum UI.
 /// Beziehung:
-/// - Wird in der ContentView unten als Eingabe für neue Prompts eingebunden.
-/// - Nutzt Binding für den Text und eine Callback-Funktion beim Absenden.
+/// - Wird in ContentView als unterer Eingabebereich verwendet.
+/// - Nutzt Binding für Text, Busy-Status und Fokus.
+/// - Sendet bei Return-Taste oder Senden-Button die Eingabe nach außen.
 struct GlassCardInputField: View {
 
     @Binding var text: String                      // Zwei-Wege-Bindung zum Eingabetext
@@ -38,13 +39,8 @@ struct GlassCardInputField: View {
                         .stroke(accentBlue.opacity(0.45), lineWidth: 1)
                         .shadow(color: accentBlue.opacity(0.3), radius: 6)
                 )
-                .focused($isInputFocused)                    // Fokussteuerung
-                .submitLabel(.send)                          // Tastatur-Taste zeigt „Senden“
-                .onSubmit {
-                    guard !isTextEmpty, !isBusy else { return }
-                    onSend()
-                    isInputFocused = false                   // Fokus schließen = Tastatur zu
-                }
+                .focused($isInputFocused)    // Fokussteuerung
+                .submitLabel(.continue)          // Tastatur zeigt „Enter“
 
             // Senden-Knopf (rechts)
             Button {
@@ -61,8 +57,9 @@ struct GlassCardInputField: View {
             .disabled(isBusy || isTextEmpty)
             .opacity(isBusy || isTextEmpty ? 0.4 : 1.0)        // Button ausgrauen
         }
-        .padding(.horizontal, 12)           // Innerer Abstand links/rechts
-        .padding(.vertical, 10)            // Innerer Abstand oben/unten
+        .padding(.trailing, 120)           // Innerer Abstand links/rechts
+        .padding(.leading, 22)
+        .padding(.vertical, 14)            // Innerer Abstand oben/unten
         .background(.ultraThinMaterial)    // Gesamter Hintergrund (Blur)
         .cornerRadius(22)
         .shadow(radius: 3)

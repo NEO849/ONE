@@ -8,18 +8,17 @@
 
 import SwiftUI
 
-/// Obere Leiste – links App-Logo (als Button für Sidebar), dann Name-Bild, rechts „New Chat“.
-/// Beziehung:
-/// - Reine Darstellung; Logik (Sidebar öffnen, neue Runde) kommt aus ContentView.
+/// Obere Leiste – links App-Logo (als Button für Sidebar), dann App-Name, rechts Button „New Chat“.
+/// Wichtig: Kein eigenes Padding! Das wird in der ContentView zentral gesetzt.
 struct TopBarView: View {
-    let appLogoAsset: String
-    let appNameAsset: String
-    let onToggleSidebar: () -> Void
-    let onNewRound: () -> Void
+    let appLogoAsset: String                // Bildname für App-Logo
+    let appNameAsset: String                // Bildname für App-Schriftzug
+    let onToggleSidebar: () -> Void         // Aktion beim Tippen auf das Logo
+    let onNewRound: () -> Void              // Aktion beim Tippen auf „New Chat“
 
     var body: some View {
         HStack {
-            // 🔹 Linker Bereich: Logo + App Name
+            // ⬅️ Linker Bereich (Logo + App-Name)
             HStack(spacing: 12) {
                 Button(action: onToggleSidebar) {
                     Image(appLogoAsset)
@@ -36,9 +35,9 @@ struct TopBarView: View {
                     .frame(height: 48)
             }
 
-            Spacer()
+            Spacer() // ➖ Abstand in der Mitte
 
-            // 🔹 Rechter Bereich: New Chat Button
+            // ➡️ Rechter Bereich (Neuer Chat)
             Button(action: onNewRound) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.bubble.fill")
@@ -54,7 +53,7 @@ struct TopBarView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 78) // 🔹 Konsistenter 32dp Abstand links und rechts
+        // Kein .padding() hier – äußere View (ContentView) gibt das vor!
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

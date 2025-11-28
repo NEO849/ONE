@@ -26,7 +26,7 @@ struct AgentCardView: View {
     // ... Layout Konstanten bleiben gleich ...
     static let cardWidthValue: CGFloat = 260
     static let cardHeightValue: CGFloat = 140
-    static let nameRailWidthValue: CGFloat = 66
+    static let nameRailWidthValue: CGFloat = 100
     private let contentLeadingPaddingValue: CGFloat = 24
     private let contentTrailingPaddingValue: CGFloat = 34
     private let contentBottomPaddingValue: CGFloat = 14
@@ -46,7 +46,6 @@ struct AgentCardView: View {
                 LeftAgentNameRailView(
                     agentNameAssetName: theme.verticalAgentName,
                     accentColor: theme.accentColor,
-                    railWidthValue: Self.nameRailWidthValue
                 )
                 
                 GlassVerticalDivider()

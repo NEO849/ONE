@@ -28,6 +28,8 @@ struct ContentView: View {
     @StateObject private var keyboard = KeyboardObserver()
 
     // Globale Layoutwerte für konsistentes Design
+    private let layoutPaddingHorizontal: CGFloat = 32  // Horizontaler Rahmen für gesamte Ansicht
+    private let inputPaddingHorizontal: CGFloat = 16   // Extra Rahmen für Eingabezeile
 
     init() {
         _viewModel = StateObject(
@@ -52,6 +54,9 @@ struct ContentView: View {
                         onToggleSidebar: { viewModel.toggleSidebar() },
                         onNewRound: { viewModel.createNewRound() }
                     )
+                    .padding(.top, 14) // Abstand zum Notch
+                    .padding(.trailing, 130)
+                    .padding(.leading, 28)
                     .padding(.bottom, 14)
 
                     // 🔹 Nachrichtenliste (extrahiert in separate View)
@@ -60,7 +65,9 @@ struct ContentView: View {
                         isInputFocused: isInputFocused,
                         bottomScrollTriggerValue: viewModel.currentSteps.count
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .keyboardDismissable($isInputFocused)
 
                 // 🔹 Seitenleiste (Overlay)
@@ -84,7 +91,6 @@ struct ContentView: View {
                         },
                         isInputFocused: $isInputFocused
                     )
-                    .padding(.horizontal, 16)
                 }
                 .padding(.bottom, keyboard.keyboardHeight)
                 .animation(.easeOut(duration: keyboard.animationDuration), value: keyboard.keyboardHeight)

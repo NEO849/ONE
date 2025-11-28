@@ -21,9 +21,8 @@ struct UserPromptBubbleView: View {
                 .background(Color.white.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             
-            Spacer(minLength: 0) // ✅ HStack nimmt volle Breite ein
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 48)
     }
 }
 
