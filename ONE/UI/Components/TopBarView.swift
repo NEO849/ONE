@@ -16,10 +16,11 @@ struct TopBarView: View {
     let appNameAsset: String
     let onToggleSidebar: () -> Void
     let onNewRound: () -> Void
-    
+
     var body: some View {
         HStack {
-            HStack(spacing: 10) {
+            // 🔹 Linker Bereich: Logo + App Name
+            HStack(spacing: 12) {
                 Button(action: onToggleSidebar) {
                     Image(appLogoAsset)
                         .resizable()
@@ -28,46 +29,56 @@ struct TopBarView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                
+
                 Image(appNameAsset)
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 56)
+                    .frame(height: 48)
             }
-            
+
             Spacer()
-            
+
+            // 🔹 Rechter Bereich: New Chat Button
             Button(action: onNewRound) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.bubble.fill")
                         .imageScale(.medium)
+
                     Text("New Chat")
                         .font(.footnote.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-                .padding(.all, 8)
-                .glassCard(cornerRadius: 10, borderColor: .blue)
+                .padding(.all, 10)
+                .glassCard(cornerRadius: 12, borderColor: .blue)
             }
             .buttonStyle(.plain)
         }
+        .padding(.horizontal, 78) // 🔹 Konsistenter 32dp Abstand links und rechts
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-#Preview("TopBar – dunkel") {
+#Preview("TopBar – Live App Appearance") {
     ZStack {
+        // Gleicher Hintergrund wie in der Haupt-App
         Image("background")
             .resizable()
             .scaledToFill()
             .ignoresSafeArea()
 
-        TopBarView(
-            appLogoAsset: "logo",
-            appNameAsset: "onetext",
-            onToggleSidebar: {},
-            onNewRound: {}
-        )
+        VStack {
+            // TopBar mit gleichen Abständen wie in ContentView
+            TopBarView(
+                appLogoAsset: "logo",
+                appNameAsset: "onetext",
+                onToggleSidebar: { print("Toggle Sidebar") },
+                onNewRound: { print("New Chat") }
+            )
+            
+            Spacer()
+        }
     }
     .environment(\.colorScheme, .dark)
 }
-
 

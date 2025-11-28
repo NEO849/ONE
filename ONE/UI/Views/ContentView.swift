@@ -6,10 +6,10 @@
 //
 
 import SwiftUI
+import Combine
 
 /// Hauptansicht des ONE-Chats – verbindet Menüleiste, Gesprächsverlauf und Eingabefeld.
 /// MVVM: ViewModel ist die Source of Truth, die View reagiert nur auf Zustandsänderungen.
-import SwiftUI
 
 /// Klassischer Chat-Screen wie WhatsApp/ChatGPT.
 /// Konzept (Profi-Standard):
@@ -20,113 +20,81 @@ import SwiftUI
 ///    damit die letzte Bubble niemals „hinter“ InputBar/Tastatur verschwindet.
 struct ContentView: View {
     
-    @FocusState private var isInputFocused: Bool                                       // Tastatur Fokus
-    @StateObject private var viewModel: ConversationViewModel                          // Source of Truth
-    
-    // Wenige, klare Abstände (kein Padding-Chaos)
-    private let layoutPaddingHorizontalValue: CGFloat = 42                             // TopBar + Chat Kante
-    private let inputPaddingHorizontalValue: CGFloat = 12                              // InputBar Kante
-    
-    // Feste ID für den unteren Scroll-Anker (immer vorhanden, nie nil)
-    private let bottomAnchorIdentifier: String = "bottomAnchorIdentifier"
-    
+    // Tastatur-Fokus (öffnet/schließt Keyboard)
+    @FocusState private var isInputFocused: Bool
+    // ViewModel als @StateObject – bleibt über Rebuilds bestehen
+    @StateObject private var viewModel: ConversationViewModel
+    // Keyboard-Observer zur dynamischen Höhenanpassung
+    @StateObject private var keyboard = KeyboardObserver()
+
+    // Globale Layoutwerte für konsistentes Design
+
     init() {
         _viewModel = StateObject(
-            wrappedValue: ConversationViewModel(service: MockConversationService())    // Service-Injektion
+            wrappedValue: ConversationViewModel(service: MockConversationService())
         )
     }
-    
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            
-            Image("background")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                
-                TopBarView(
-                    appLogoAsset: "logo",
-                    appNameAsset: "onetext",
-                    onToggleSidebar: { viewModel.toggleSidebar() },           // Logik im VM
-                    onNewRound: { viewModel.createNewRound() }                // Logik im VM
-                )
-                .padding(.horizontal, layoutPaddingHorizontalValue)    // einheitliche Kante
-                .padding(.top, 8)
-                .padding(.bottom, 14)
-                
-                ScrollViewReader { scrollProxy in    
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 20) {
-                            
-                            // Chat-Inhalt
-                            ForEach(viewModel.currentSteps, id: \.id) { stepValue in
-                                VStack(alignment: .leading, spacing: 12) {
-                                    UserPromptBubbleView(promptText: stepValue.userPrompt)
-                                    StackedAgentCardsView(step: stepValue)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)  // stabil links
-                            }
-                            
-                            // ✅ Bottom-Anker + Platz für InputBar
-                            Color.clear
 
-                                .id(bottomAnchorIdentifier)               // fester Anker
-                        }
-                        .padding(.horizontal, layoutPaddingHorizontalValue)  // gleiche Kante wie TopBar
-                      
-                    }
-                    .scrollDismissesKeyboard(.immediately)      // Scroll -> Tastatur schließen
-                    
-                    // Wenn neue Nachricht kommt -> ans Ende
-                    .onChange(of: viewModel.currentSteps.count) {
-                        scrollToBottom(scrollProxy: scrollProxy)
-                    }
-                    
-                    // Wenn Tastatur aufgeht -> ans Ende (damit Bubble sichtbar bleibt)
-                    .onChange(of: isInputFocused) { _, isFocusedValue in
-                        guard isFocusedValue else { return } // nur beim Öffnen
-                        DispatchQueue.main.async {           // nach Layout-Update scrollen
-                            scrollToBottom(scrollProxy: scrollProxy)
-                        }
-                    }
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                // Hintergrundbild – Fullscreen & Edge-to-Edge
+                Image("background")
+                    .resizable()
+                    .scaledToFill()
+                    .ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    // 🔹 TopBar – feste obere Leiste
+                    TopBarView(
+                        appLogoAsset: "logo",
+                        appNameAsset: "onetext",
+                        onToggleSidebar: { viewModel.toggleSidebar() },
+                        onNewRound: { viewModel.createNewRound() }
+                    )
+                    .padding(.bottom, 14)
+
+                    // 🔹 Nachrichtenliste (extrahiert in separate View)
+                    ChatMessageListView(
+                        steps: viewModel.currentSteps,
+                        isInputFocused: isInputFocused,
+                        bottomScrollTriggerValue: viewModel.currentSteps.count
+                    )
                 }
+                .keyboardDismissable($isInputFocused)
+
+                // 🔹 Seitenleiste (Overlay)
+                HistorySidebarView(
+                    rounds: viewModel.rounds,
+                    isOpen: $viewModel.isSidebarOpen,
+                    onSelect: { index in viewModel.selectRound(at: index) }
+                )
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .keyboardDismissable($isInputFocused)    // Tippen außerhalb -> Tastatur zu
-            
-            HistorySidebarView(
-                rounds: viewModel.rounds,
-                isOpen: $viewModel.isSidebarOpen,
-                onSelect: { indexValue in viewModel.selectRound(at: indexValue) }
-            )
-        }
-        .safeAreaInset(edge: .bottom) {
-            GlassCardInputField(
-                text: $viewModel.inputText,
-                isBusy: viewModel.isBusy,
-                onSend: {
-                    let trimmedTextValue = viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmedTextValue.isEmpty else { return }
-                    
-                    viewModel.runFreeFlowStep()
-                    isInputFocused = false                      // Tastatur schließen
-                },
-                isInputFocused: $isInputFocused
-            )
-            .padding(.horizontal, inputPaddingHorizontalValue)
-            .padding(.bottom, 8)
-        }
-    }
-    
-    /// Scrollt immer sicher zum unteren Anker.
-    private func scrollToBottom(scrollProxy: ScrollViewProxy) {
-        withAnimation(.easeInOut) {
-            scrollProxy.scrollTo(bottomAnchorIdentifier, anchor: .bottom)   // fester Anker
+            .ignoresSafeArea(.keyboard, edges: .bottom) // Tastatur darf nur unten überlagern
+            .overlay(alignment: .bottom) {
+                VStack(spacing: 0) {
+                    GlassCardInputField(
+                        text: $viewModel.inputText,
+                        isBusy: viewModel.isBusy,
+                        onSend: {
+                            let trimmedText = viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmedText.isEmpty else { return }
+                            viewModel.runFreeFlowStep()
+                            isInputFocused = false
+                        },
+                        isInputFocused: $isInputFocused
+                    )
+                    .padding(.horizontal, 16)
+                }
+                .padding(.bottom, keyboard.keyboardHeight)
+                .animation(.easeOut(duration: keyboard.animationDuration), value: keyboard.keyboardHeight)
+            }
+            .onAppear { keyboard.startObserving() }
+            .onDisappear { keyboard.stopObserving() }
         }
     }
 }
+
 
 #Preview("Content – Mockdaten, versetzte Agenten-Karten") {
     ContentView()
