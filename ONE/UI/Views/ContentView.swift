@@ -65,6 +65,7 @@ struct ContentView: View {
                         isInputFocused: isInputFocused,
                         bottomScrollTriggerValue: viewModel.currentSteps.count
                     )
+                    
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
