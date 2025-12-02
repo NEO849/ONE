@@ -38,11 +38,11 @@ struct ChatMessageListView: View {
             }
          //   .scrollDismissesKeyboard(.immediately)
 
-            .onChange(of: bottomScrollTriggerValue) { _ in
+            .onChange(of: bottomScrollTriggerValue) {
                 scrollToBottom(scrollProxy: scrollProxy)
             }
 
-            .onChange(of: isInputFocused) { _ in
+            .onChange(of: isInputFocused) {
                 DispatchQueue.main.async {
                     scrollToBottom(scrollProxy: scrollProxy)
                 }
@@ -101,3 +101,4 @@ private enum ChatMessageListViewPreviewFactory {
         return ergebnisSteps                                                                 // fertiges Array zurückgeben
     }
 }
+
