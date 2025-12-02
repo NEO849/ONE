@@ -11,20 +11,20 @@ import SwiftUI
 /// Obere Leiste – links App-Logo (als Button für Sidebar), dann App-Name, rechts Button „New Chat“.
 /// Wichtig: Kein eigenes Padding! Das wird in der ContentView zentral gesetzt.
 struct TopBarView: View {
-    let appLogoAsset: String                // Bildname für App-Logo
-    let appNameAsset: String                // Bildname für App-Schriftzug
-    let onToggleSidebar: () -> Void         // Aktion beim Tippen auf das Logo
-    let onNewRound: () -> Void              // Aktion beim Tippen auf „New Chat“
+
+    let appLogoAsset: String                                                                         // Asset-Name Logo
+    let appNameAsset: String                                                                         // Asset-Name Schriftzug
+    let onToggleSidebar: () -> Void                                                                  // Aktion: Sidebar öffnen
+    let onNewRound: () -> Void                                                                       // Aktion: neuen Chat starten
 
     var body: some View {
-        HStack {
-            // ⬅️ Linker Bereich (Logo + App-Name)
-            HStack(spacing: 12) {
-                Button(action: onToggleSidebar) {
+        HStack(spacing: 14) {                                                                        // Grundlayout der TopBar
+            HStack(spacing: 12) {                                                                    // Linke Gruppe: Logo + Name
+                Button(action: onToggleSidebar) {                                                     // Logo ist Button
                     Image(appLogoAsset)
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 32)
+                        .frame(height: 32)                                                           // Fixe Höhe -> stabile TopBar
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
@@ -32,13 +32,13 @@ struct TopBarView: View {
                 Image(appNameAsset)
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 48)
+                    .frame(height: 48)                                                               // Fixe Höhe -> verhindert Springen
             }
+            .layoutPriority(0)                                                                        // Links darf notfalls eher schrumpfen
 
-            Spacer() // ➖ Abstand in der Mitte
+            Spacer(minLength: 12)                                                                     // Trennung + flexible Mitte
 
-            // ➡️ Rechter Bereich (Neuer Chat)
-            Button(action: onNewRound) {
+            Button(action: onNewRound) {                                                              // Rechter Button
                 HStack(spacing: 6) {
                     Image(systemName: "plus.bubble.fill")
                         .imageScale(.medium)
@@ -46,15 +46,15 @@ struct TopBarView: View {
                     Text("New Chat")
                         .font(.footnote.weight(.semibold))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.85)
                 }
-                .padding(.all, 10)
-                .glassCard(cornerRadius: 12, borderColor: .blue)
+                .padding(.all, 10)                                                                    // Touch-Ziel + Optik
+                .glassCard(cornerRadius: 12, borderColor: .blue)                                      // Dein Glass-Design
             }
             .buttonStyle(.plain)
+            .layoutPriority(1)                                                                        // Rechts bevorzugt Platz bekommen
         }
-        // Kein .padding() hier – äußere View (ContentView) gibt das vor!
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)                                                                   // Wichtig: Spacer kann nur so „schieben“
     }
 }
 

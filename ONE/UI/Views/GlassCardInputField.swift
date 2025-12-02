@@ -14,55 +14,69 @@ import SwiftUI
 /// - Sendet bei Return-Taste oder Senden-Button die Eingabe nach außen.
 struct GlassCardInputField: View {
 
-    @Binding var text: String                      // Zwei-Wege-Bindung zum Eingabetext
-    var isBusy: Bool = false                       // Zeigt Ladezustand (z. B. während KI antwortet)
-    var onSend: () -> Void                         // Aktion beim Absenden
+    @Binding var text: String                                                                          // Source of Truth kommt von außen
+    var isBusy: Bool = false                                                                           // Busy: sperrt Senden
+    var onSend: () -> Void                                                                             // Callback nach außen
 
-    @FocusState.Binding var isInputFocused: Bool   // Fokusbindung (öffnet/schließt Tastatur)
+    @FocusState.Binding var isInputFocused: Bool                                                       // Fokus-Binding für Keyboard
 
-    private let accentBlue: Color = .blue          // Designfarbe für Senden-Knopf
+    private let accentBlue: Color = .blue                                                              // Akzentfarbe
 
     var body: some View {
-        // Text leer prüfen (leer nach Trimmen?)
-        let isTextEmpty = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-
         HStack(spacing: 14) {
-            // Textfeld – kann ein- oder mehrzeilig sein
-            TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)
+            TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)                         // Mehrzeilig möglich
                 .textFieldStyle(.plain)
-                .foregroundColor(.white.opacity(0.9))        // Textfarbe
-                .padding(12)
-                .background(.ultraThinMaterial)              // Blur-Hintergrund
-                .cornerRadius(18)
+                .foregroundColor(.white.opacity(0.92))
+                .lineLimit(1...4)                                                                      // Max 4 Zeilen -> UI bleibt stabil
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)                                                        // Feld-Glas
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(accentBlue.opacity(0.45), lineWidth: 1)
-                        .shadow(color: accentBlue.opacity(0.3), radius: 6)
+                        .shadow(color: accentBlue.opacity(0.25), radius: 6)
                 )
-                .focused($isInputFocused)    // Fokussteuerung
-                .submitLabel(.continue)          // Tastatur zeigt „Enter“
+                .focused($isInputFocused)                                                              // Fokus steuert Tastatur
+                .submitLabel(.send)                                                                    // „Senden“ auf der Tastatur
+                .onSubmit {                                                                            // Return-Taste sendet
+                    sendInputText()                                                                    // Gleiche Logik wie Button
+                }
 
-            // Senden-Knopf (rechts)
             Button {
-                guard !isTextEmpty, !isBusy else { return }
-                onSend()
-                isInputFocused = false
+                sendInputText()                                                                        // Senden über Button
             } label: {
                 Image(systemName: isBusy ? "hourglass" : "paperplane.fill")
                     .font(.title2)
                     .foregroundColor(accentBlue)
-                    .rotationEffect(.degrees(isBusy ? 180 : 0)) // Animation bei Busy
+                    .rotationEffect(.degrees(isBusy ? 180 : 0))
                     .animation(.easeInOut(duration: 0.3), value: isBusy)
+                    .frame(width: 44, height: 44)                                                      // Fixe Touch-Fläche
             }
-            .disabled(isBusy || isTextEmpty)
-            .opacity(isBusy || isTextEmpty ? 0.4 : 1.0)        // Button ausgrauen
+            .disabled(isBusy || isTrimmedTextEmpty)                                                    // Guard via UI
+            .opacity(isBusy || isTrimmedTextEmpty ? 0.4 : 1.0)
         }
-        .padding(.trailing, 120)           // Innerer Abstand links/rechts
-        .padding(.leading, 22)
-        .padding(.vertical, 14)            // Innerer Abstand oben/unten
-        .background(.ultraThinMaterial)    // Gesamter Hintergrund (Blur)
-        .cornerRadius(22)
+        .padding(.horizontal, 14)                                                                      // Außen-Padding der gesamten Bar
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)                                                                // Bar-Glas (einmal!)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(accentBlue.opacity(0.22), lineWidth: 1)
+        )
         .shadow(radius: 3)
+    }
+
+    private var isTrimmedTextEmpty: Bool {                                                             // Hilfswert für Guard-Logik
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty                                   // Leer nach Trimmen?
+    }
+
+    private func sendInputText() {                                                                     // Zentrale Sende-Funktion
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)                         // Input bereinigen
+        guard !trimmedText.isEmpty else { return }                                                     // Guard: nichts senden
+        guard !isBusy else { return }                                                                  // Guard: nicht doppelt senden
+        onSend()                                                                                       // Callback nach außen (VM macht Request)
+        isInputFocused = false                                                                         // Tastatur schließen nach Senden
     }
 }
 

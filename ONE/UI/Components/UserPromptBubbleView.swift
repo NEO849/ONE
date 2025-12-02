@@ -9,20 +9,18 @@ import SwiftUI
 
 ///  Darstellung der Eingabe des Nutzers als Bubble.
 struct UserPromptBubbleView: View {
+
     let promptText: String
     
     var body: some View {
-        HStack(alignment: .bottom) {
-            Text(promptText)
-                .font(.callout)
-                .foregroundColor(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            
-        }
-        .padding(.horizontal, 48)
+        Text(promptText)
+            .font(.callout)
+            .foregroundColor(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .frame(maxWidth: .infinity)
     }
 }
 

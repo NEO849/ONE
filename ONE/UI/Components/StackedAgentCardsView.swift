@@ -49,7 +49,7 @@ struct StackedAgentCardsView: View {
                     }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading) // ⬅️ Karten nach links anordnen
+        .frame(maxWidth: .infinity) // ⬅️ Karten nach links anordnen
         .padding(.leading, 12) // 📏 Konsistenter linker Abstand
         .padding(.top, 8)      // 🧩 Etwas Luft zur UserBubble
         .padding(.bottom, 160)
