@@ -5,26 +5,29 @@
 //  Created by Michael Fleps on 04.11.25.
 //
 
-
 import SwiftUI
 
-/// Obere Leiste – links App-Logo (als Button für Sidebar), dann App-Name, rechts Button „New Chat“.
-/// Wichtig: Kein eigenes Padding! Das wird in der ContentView zentral gesetzt.
+/// Obere Leiste – Logo (Sidebar), App-Name, Layout-Toggle und New-Chat.
+/// Kein eigenes Padding – wird zentral in ContentView gesetzt.
 struct TopBarView: View {
 
-    let appLogoAsset: String                                                                         // Asset-Name Logo
-    let appNameAsset: String                                                                         // Asset-Name Schriftzug
-    let onToggleSidebar: () -> Void                                                                  // Aktion: Sidebar öffnen
-    let onNewRound: () -> Void                                                                       // Aktion: neuen Chat starten
+    let appLogoAsset: String
+    let appNameAsset: String
+    let layoutMode: LayoutMode
+    let onToggleSidebar: () -> Void
+    let onToggleLayout: () -> Void
+    let onNewRound: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {                                                                        // Grundlayout der TopBar
-            HStack(spacing: 12) {                                                                    // Linke Gruppe: Logo + Name
-                Button(action: onToggleSidebar) {                                                     // Logo ist Button
+        HStack(spacing: 14) {
+
+            // Linke Gruppe: Logo (Sidebar-Trigger) + App-Name
+            HStack(spacing: 12) {
+                Button(action: onToggleSidebar) {
                     Image(appLogoAsset)
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 32)                                                           // Fixe Höhe -> stabile TopBar
+                        .frame(height: 32)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
@@ -32,52 +35,60 @@ struct TopBarView: View {
                 Image(appNameAsset)
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 48)                                                               // Fixe Höhe -> verhindert Springen
+                    .frame(height: 48)
             }
-            .layoutPriority(0)                                                                        // Links darf notfalls eher schrumpfen
+            .layoutPriority(0)
 
-            Spacer(minLength: 12)                                                                     // Trennung + flexible Mitte
+            Spacer(minLength: 12)
 
-            Button(action: onNewRound) {                                                              // Rechter Button
+            // Layout-Toggle: wechselt zwischen Grid und Stacked
+            Button(action: onToggleLayout) {
+                Image(systemName: layoutMode.systemIcon)
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .glassCard(cornerRadius: 12, borderColor: .white)
+            }
+            .buttonStyle(.plain)
+
+            // New Chat
+            Button(action: onNewRound) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.bubble.fill")
                         .imageScale(.medium)
-
                     Text("New Chat")
                         .font(.footnote.weight(.semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                 }
-                .padding(.all, 10)                                                                    // Touch-Ziel + Optik
-                .glassCard(cornerRadius: 12, borderColor: .blue)                                      // Dein Glass-Design
+                .padding(.all, 10)
+                .glassCard(cornerRadius: 12, borderColor: .blue)
             }
             .buttonStyle(.plain)
-            .layoutPriority(1)                                                                        // Rechts bevorzugt Platz bekommen
+            .layoutPriority(1)
         }
-        .frame(maxWidth: .infinity)                                                                   // Wichtig: Spacer kann nur so „schieben“
+        .frame(maxWidth: .infinity)
     }
 }
 
 #Preview("TopBar – Live App Appearance") {
     ZStack {
-        // Gleicher Hintergrund wie in der Haupt-App
         Image("background")
             .resizable()
             .scaledToFill()
             .ignoresSafeArea()
 
         VStack {
-            // TopBar mit gleichen Abständen wie in ContentView
             TopBarView(
                 appLogoAsset: "logo",
                 appNameAsset: "onetext",
-                onToggleSidebar: { print("Toggle Sidebar") },
+                layoutMode: .grid,
+                onToggleSidebar: { print("Sidebar") },
+                onToggleLayout: { print("Layout") },
                 onNewRound: { print("New Chat") }
             )
-            
             Spacer()
         }
     }
     .environment(\.colorScheme, .dark)
 }
-
