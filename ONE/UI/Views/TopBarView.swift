@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Obere Leiste – Logo (Sidebar), App-Name, Layout-Toggle und New-Chat.
+/// Obere Leiste – Logo (Sidebar), App-Name, Layout-Toggle, Settings und New-Chat.
 /// Kein eigenes Padding – wird zentral in ContentView gesetzt.
 struct TopBarView: View {
 
@@ -16,6 +16,7 @@ struct TopBarView: View {
     let layoutMode: LayoutMode
     let onToggleSidebar: () -> Void
     let onToggleLayout: () -> Void
+    let onSettings: () -> Void
     let onNewRound: () -> Void
 
     var body: some View {
@@ -44,6 +45,16 @@ struct TopBarView: View {
             // Layout-Toggle: wechselt zwischen Grid und Stacked
             Button(action: onToggleLayout) {
                 Image(systemName: layoutMode.systemIcon)
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .glassCard(cornerRadius: 12, borderColor: .white)
+            }
+            .buttonStyle(.plain)
+
+            // Settings: API-Keys bearbeiten
+            Button(action: onSettings) {
+                Image(systemName: "gearshape")
                     .font(.title3)
                     .foregroundStyle(.white)
                     .padding(10)
@@ -83,9 +94,10 @@ struct TopBarView: View {
                 appLogoAsset: "logo",
                 appNameAsset: "onetext",
                 layoutMode: .grid,
-                onToggleSidebar: { print("Sidebar") },
-                onToggleLayout: { print("Layout") },
-                onNewRound: { print("New Chat") }
+                onToggleSidebar: {},
+                onToggleLayout: {},
+                onSettings: {},
+                onNewRound: {}
             )
             Spacer()
         }

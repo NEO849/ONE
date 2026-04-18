@@ -14,6 +14,7 @@ struct ContentView: View {
 
     @FocusState private var isInputFocused: Bool
     @EnvironmentObject private var conversationViewModel: ConversationViewModel
+    @State private var isSettingsPresented: Bool = false
 
     private let layoutPaddingHorizontal: CGFloat = 32
     private let topbarPaddingVertical: CGFloat   = 12
@@ -43,8 +44,9 @@ struct ContentView: View {
                 appNameAsset: "onetext",
                 layoutMode: conversationViewModel.layoutMode,
                 onToggleSidebar: { conversationViewModel.toggleSidebar() },
-                onToggleLayout: { conversationViewModel.toggleLayoutMode() },
-                onNewRound: { conversationViewModel.createNewRound() }
+                onToggleLayout:  { conversationViewModel.toggleLayoutMode() },
+                onSettings:      { isSettingsPresented = true },
+                onNewRound:      { conversationViewModel.createNewRound() }
             )
             .padding(.horizontal, layoutPaddingHorizontal)
             .padding(.vertical, topbarPaddingVertical)
@@ -56,7 +58,8 @@ struct ContentView: View {
                 text: $conversationViewModel.inputText,
                 isBusy: conversationViewModel.isBusy,
                 onSend: {
-                    let trimmed = conversationViewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmed = conversationViewModel.inputText
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
                     conversationViewModel.runFreeFlowStep()
                     isInputFocused = false
@@ -67,7 +70,7 @@ struct ContentView: View {
             .padding(.vertical, inputbarPaddingVertical)
         }
 
-        // Sidebar als Overlay – allowsHitTesting verhindert Tapp-Blocking wenn geschlossen
+        // Sidebar als Overlay – allowsHitTesting verhindert Tap-Blocking wenn geschlossen
         .overlay {
             HistorySidebarView(
                 rounds: conversationViewModel.rounds,
@@ -78,6 +81,14 @@ struct ContentView: View {
                 onSelect: { conversationViewModel.selectRound(at: $0) }
             )
             .allowsHitTesting(conversationViewModel.isSidebarOpen)
+        }
+
+        // Settings-Sheet: API-Keys bearbeiten
+        .sheet(isPresented: $isSettingsPresented) {
+            SettingsView {
+                // Nach dem Speichern neuer Keys: Service auf Real umstellen
+                conversationViewModel.updateService(RealConversationService())
+            }
         }
     }
 }
