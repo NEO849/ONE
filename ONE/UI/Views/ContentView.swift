@@ -37,7 +37,6 @@ struct ContentView: View {
         }
         .keyboardDismissable($isInputFocused)
 
-        // TopBar sitzt im SafeArea-Top
         .safeAreaInset(edge: .top, spacing: 0) {
             TopBarView(
                 appLogoAsset: "logo",
@@ -52,7 +51,6 @@ struct ContentView: View {
             .padding(.vertical, topbarPaddingVertical)
         }
 
-        // InputBar sitzt direkt über dem Keyboard
         .safeAreaInset(edge: .bottom, spacing: 0) {
             GlassCardInputField(
                 text: $conversationViewModel.inputText,
@@ -70,7 +68,7 @@ struct ContentView: View {
             .padding(.vertical, inputbarPaddingVertical)
         }
 
-        // Sidebar als Overlay – allowsHitTesting verhindert Tap-Blocking wenn geschlossen
+        // Sidebar – ID-basiert, aktive Runde hervorgehoben, swipe-to-delete
         .overlay {
             HistorySidebarView(
                 rounds: conversationViewModel.rounds,
@@ -78,7 +76,9 @@ struct ContentView: View {
                     get: { conversationViewModel.isSidebarOpen },
                     set: { conversationViewModel.isSidebarOpen = $0 }
                 ),
-                onSelect: { conversationViewModel.selectRound(at: $0) }
+                selectedRoundId: conversationViewModel.currentRoundId,
+                onSelect: { conversationViewModel.selectRound(at: $0) },
+                onDelete: { conversationViewModel.deleteRound(withId: $0) }
             )
             .allowsHitTesting(conversationViewModel.isSidebarOpen)
         }
@@ -86,7 +86,6 @@ struct ContentView: View {
         // Settings-Sheet: API-Keys bearbeiten
         .sheet(isPresented: $isSettingsPresented) {
             SettingsView {
-                // Nach dem Speichern neuer Keys: Service auf Real umstellen
                 conversationViewModel.updateService(RealConversationService())
             }
         }

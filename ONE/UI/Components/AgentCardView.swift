@@ -8,23 +8,37 @@
 import SwiftUI
 
 /// Einzelne Agenten-Karte mit eigenem Hintergrund, Rahmen & Glas.
-/// Ladezustand: Skeleton-Shimmer sobald agentResponse leer ist.
-/// Wird in StackedAgentCardsView (isGridLayout = false)
-/// und GridAgentCardsView (isGridLayout = true) eingesetzt.
+/// Zustände:
+///   • Leer  → Skeleton-Shimmer (agentResponse.isEmpty)
+///   • Fehler → Orange Stroke + Fehlertext (agentResponse beginnt mit "[AgentName]")
+///   • Normal → Antworttext + 'Mehr anzeigen'-Button
 struct AgentCardView: View {
 
     let agent: AgentType
     let agentResponse: String
+    let userPrompt: String          // Kontext für FullAnswerAgentSheet
     var isGridLayout: Bool = false
 
     @State private var showingSheet: Bool = false
     @State private var shimmerOpacity: Double = 1.0
 
     private var theme: AgentTheme { agent.theme }
-    private var isLoading: Bool { agentResponse.isEmpty }
 
-    static let cardWidthValue:    CGFloat = 260
-    static let cardHeightValue:   CGFloat = 140
+    // Zustandslogik
+    private var isLoading: Bool { agentResponse.isEmpty }
+    private var isErrorResponse: Bool {
+        // safeAgentReply schreibt "[DisplayName] Fehler:..." bei API-Fehlern
+        agentResponse.hasPrefix("[\(agent.displayName)]")
+    }
+    private var displayedErrorMessage: String {
+        let prefix = "[\(agent.displayName)] "
+        return agentResponse.hasPrefix(prefix)
+            ? String(agentResponse.dropFirst(prefix.count))
+            : agentResponse
+    }
+
+    static let cardWidthValue:     CGFloat = 260
+    static let cardHeightValue:    CGFloat = 140
     static let nameRailWidthValue: CGFloat = 100
     private let contentLeadingPaddingValue:  CGFloat = 24
     private let contentTrailingPaddingValue: CGFloat = 34
@@ -32,6 +46,9 @@ struct AgentCardView: View {
     private let maxLines: Int = 4
 
     private var cardHeight: CGFloat { isGridLayout ? 170 : Self.cardHeightValue }
+    private var borderColor: Color {
+        isErrorResponse ? .orange : theme.accentColor
+    }
 
     var body: some View {
         ZStack {
@@ -40,8 +57,9 @@ struct AgentCardView: View {
                 .scaledToFill()
                 .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius))
 
+            // Stroke: orange bei Fehler, sonst Agenten-Akzentfarbe
             RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(theme.accentColor.opacity(0.85), lineWidth: theme.strokeWidth)
+                .stroke(borderColor.opacity(0.85), lineWidth: theme.strokeWidth)
 
             HStack(spacing: 0) {
                 LeftAgentNameRailView(
@@ -53,6 +71,8 @@ struct AgentCardView: View {
 
                 if isLoading {
                     skeletonContent
+                } else if isErrorResponse {
+                    errorContent
                 } else {
                     realContent
                 }
@@ -65,10 +85,15 @@ struct AgentCardView: View {
         .glassCard(cornerRadius: theme.cornerRadius)
         .clipped()
         .animation(.easeInOut(duration: 0.25), value: isLoading)
+        .animation(.easeInOut(duration: 0.2), value: isErrorResponse)
         .sheet(isPresented: $showingSheet) {
-            FullAnswerAgentSheet(agent: agent, fullResponse: agentResponse)
-                .presentationDragIndicator(.visible)
-                .presentationDetents([.large])
+            FullAnswerAgentSheet(
+                agent: agent,
+                fullResponse: agentResponse,
+                userPrompt: userPrompt
+            )
+            .presentationDragIndicator(.visible)
+            .presentationDetents([.large])
         }
     }
 
@@ -88,39 +113,57 @@ struct AgentCardView: View {
                 .padding(.trailing, contentTrailingPaddingValue)
                 .padding(.bottom, 6)
 
-            Button("Mehr anzeigen") {
-                showingSheet = true
+            Button("Mehr anzeigen") { showingSheet = true }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(theme.accentColor)
+                .padding(.leading, contentLeadingPaddingValue)
+                .padding(.trailing, contentTrailingPaddingValue)
+                .padding(.bottom, contentBottomPaddingValue)
+        }
+    }
+
+    // MARK: - Fehlerzustand
+
+    private var errorContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: 18)
+
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.orange)
+                Text("API-Fehler")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.orange)
             }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(theme.accentColor)
             .padding(.leading, contentLeadingPaddingValue)
-            .padding(.trailing, contentTrailingPaddingValue)
-            .padding(.bottom, contentBottomPaddingValue)
+            .padding(.bottom, 6)
+
+            Text(displayedErrorMessage)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.65))
+                .lineLimit(3)
+                .padding(.leading, contentLeadingPaddingValue)
+                .padding(.trailing, contentTrailingPaddingValue)
+
+            Spacer()
         }
     }
 
     // MARK: - Skeleton / Ladezustand
 
-    /// Drei Platzhalter-Zeilen mit pulsierender Opazität – signalisiert laufenden API-Call.
     private var skeletonContent: some View {
         VStack(alignment: .leading, spacing: 10) {
             Spacer().frame(height: 24)
-
-            // Zeile 1: voll breit
             skeletonLine(trailingExtra: 0)
-            // Zeile 2: etwas kürzer
             skeletonLine(trailingExtra: 36)
-            // Zeile 3: am kürzesten
             skeletonLine(trailingExtra: 72)
-
             Spacer()
         }
         .padding(.leading, contentLeadingPaddingValue)
         .opacity(shimmerOpacity)
         .onAppear {
-            withAnimation(
-                .easeInOut(duration: 0.75).repeatForever(autoreverses: true)
-            ) {
+            withAnimation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true)) {
                 shimmerOpacity = 0.3
             }
         }
@@ -138,9 +181,9 @@ struct AgentCardView: View {
 #Preview("AgentCard – Stack-Modus") {
     ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 16) {
-            AgentCardView(agent: .claude,  agentResponse: "Den kompletten Inhalt durch die neue AgentCardView ersetzen")
-            AgentCardView(agent: .gemini,  agentResponse: "Bei versetzten Karten ist ein vertikaler Agenten-Name links perfekt.")
-            AgentCardView(agent: .mistral, agentResponse: "Innen-Einzug der Texte erhöhen – Padding nur bei den Zeilen.")
+            AgentCardView(agent: .claude,  agentResponse: "Strukturiert: MVVM trennt Darstellung und Logik.", userPrompt: "Wie funktioniert MVVM?")
+            AgentCardView(agent: .gemini,  agentResponse: "Fakten: ViewModel ist @MainActor und @ObservableObject.", userPrompt: "Wie funktioniert MVVM?")
+            AgentCardView(agent: .mistral, agentResponse: "Prägnant: View = UI, VM = State+Logik.", userPrompt: "Wie funktioniert MVVM?")
         }
         .padding(20)
     }
@@ -148,22 +191,20 @@ struct AgentCardView: View {
     .environment(\.colorScheme, .dark)
 }
 
-#Preview("AgentCard – Grid-Modus") {
-    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-        AgentCardView(agent: .claude,  agentResponse: "MVVM trennt View, ViewModel und Model klar.",           isGridLayout: true)
-        AgentCardView(agent: .gemini,  agentResponse: "Nutze @StateObject für das ViewModel in der Root-View.",  isGridLayout: true)
-        AgentCardView(agent: .mistral, agentResponse: "Kurz: ViewModel = State + Logik. View = nur Rendering.",  isGridLayout: true)
-        AgentCardView(agent: .chatgpt, agentResponse: "MVVM ist der empfohlene Ansatz in SwiftUI.",             isGridLayout: true)
+#Preview("AgentCard – Ladezustand (Shimmer)") {
+    HStack(spacing: 16) {
+        AgentCardView(agent: .claude,  agentResponse: "", userPrompt: "Test")
+        AgentCardView(agent: .gemini,  agentResponse: "", userPrompt: "Test")
     }
-    .padding(16)
+    .padding(20)
     .background(Image("background").resizable().scaledToFill().ignoresSafeArea())
     .environment(\.colorScheme, .dark)
 }
 
-#Preview("AgentCard – Ladezustand (Shimmer)") {
+#Preview("AgentCard – Fehlerzustand") {
     HStack(spacing: 16) {
-        AgentCardView(agent: .claude,  agentResponse: "")
-        AgentCardView(agent: .gemini,  agentResponse: "")
+        AgentCardView(agent: .claude, agentResponse: "[Claude] HTTP 401 – ungültiger API-Key.", userPrompt: "Test")
+        AgentCardView(agent: .gemini, agentResponse: "[Gemini] Netzwerkfehler: kein Internet.", userPrompt: "Test")
     }
     .padding(20)
     .background(Image("background").resizable().scaledToFill().ignoresSafeArea())

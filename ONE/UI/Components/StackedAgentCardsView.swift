@@ -8,7 +8,6 @@
 import SwiftUI
 
 /// Ansicht 2: Versetzter, klickbarer Kartenstapel (oben links → unten rechts).
-/// Alle Karten gleich groß; Gesamthöhe kürzer als eine Bildschirmhöhe.
 /// Tippen bringt die gewählte Karte nach vorne.
 struct StackedAgentCardsView: View {
 
@@ -22,27 +21,31 @@ struct StackedAgentCardsView: View {
     var body: some View {
         let agentsList  = AgentType.allCases
         let agentCount  = CGFloat(agentsList.count)
-        let stackHeight = AgentCardView.cardHeightValue + (agentCount - 1) * offsetYValue  // 140 + 3*54 = 302
+        let stackHeight = AgentCardView.cardHeightValue + (agentCount - 1) * offsetYValue
 
         ZStack(alignment: .topLeading) {
             ForEach(agentsList.indices, id: \.self) { indexValue in
                 let agentValue = agentsList[indexValue]
-
-                let replyTextValue: String = {
+                let replyText: String = {
                     if agentValue == .chatgpt { return step.finalReply ?? "" }
                     return step.reply(for: agentValue) ?? ""
                 }()
 
-                AgentCardView(agent: agentValue, agentResponse: replyTextValue)
-                    .offset(x: CGFloat(indexValue) * offsetXValue, y: CGFloat(indexValue) * offsetYValue)
-                    .scaleEffect(frontIndex == indexValue ? 1.0 : 0.94)
-                    .shadow(radius: frontIndex == indexValue ? 18 : 8)
-                    .zIndex(frontIndex == indexValue ? 1 : 0)
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                            frontIndex = indexValue
-                        }
+                AgentCardView(
+                    agent: agentValue,
+                    agentResponse: replyText,
+                    userPrompt: step.userPrompt
+                )
+                .offset(x: CGFloat(indexValue) * offsetXValue,
+                        y: CGFloat(indexValue) * offsetYValue)
+                .scaleEffect(frontIndex == indexValue ? 1.0 : 0.94)
+                .shadow(radius: frontIndex == indexValue ? 18 : 8)
+                .zIndex(frontIndex == indexValue ? 1 : 0)
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                        frontIndex = indexValue
                     }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

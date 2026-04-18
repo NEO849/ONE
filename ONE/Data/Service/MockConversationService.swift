@@ -7,13 +7,14 @@
 
 import Foundation
 
-/// Schein-Implementierung (schnell, stabil, #Preview-tauglich).
-/// Free-Flow:
-/// - Alle drei Agenten antworten auf den gleichen Prompt (mit Rollenmarkierung).
-/// - ChatGPT prüft und liefert eine finale Antwort.
+/// Schein-Implementierung – schnell, stabil, #Preview-tauglich.
+/// Realistische async-Delays sorgen dafür, dass der Shimmer-Ladezustand
+/// in Previews und auf dem Simulator sichtbar ist.
 struct MockConversationService: ConversationProtocol {
 
     func planAgentPrompts(for userPrompt: String) async throws -> [AgentType: String] {
+        // Kurze Planungsphase simulieren
+        try await Task.sleep(for: .milliseconds(300))
         let base = userPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         return [
             .gemini:  "[Research] \(base)",
@@ -23,21 +24,33 @@ struct MockConversationService: ConversationProtocol {
     }
 
     func fetchAgentReply(for agent: AgentType, plannedPrompt: String) async throws -> String {
+        // Versetzt: Mistral antwortet zuerst, dann Gemini, zuletzt Claude –
+        // so ist das progressive Update der Karten gut sichtbar.
+        let delayMs: Int
         switch agent {
-        case .gemini:  return "Research → \(plannedPrompt.prefix(64))…"
-        case .claude:  return "Structure → \(plannedPrompt.prefix(64))…"
-        case .mistral: return "Concise → \(plannedPrompt.prefix(64))…"
-        case .chatgpt: return "" // ChatGPT antwortet hier erst als Final-Reply
+        case .gemini:  delayMs = 1_400
+        case .claude:  delayMs = 2_100
+        case .mistral: delayMs =   900
+        case .chatgpt: delayMs =     0
+        }
+        if delayMs > 0 {
+            try await Task.sleep(for: .milliseconds(delayMs))
+        }
+        switch agent {
+        case .gemini:  return "[Gemini] Fakten & Quellen: \(plannedPrompt.prefix(80))…"
+        case .claude:  return "[Claude] Strukturiert: \(plannedPrompt.prefix(80))…"
+        case .mistral: return "[Mistral] Prägnant: \(plannedPrompt.prefix(80))…"
+        case .chatgpt: return ""
         }
     }
 
     func makeFinalReply(from agentReplies: [AgentType: String], userPrompt: String) async throws -> String {
-        """
-        Final check:
-        • Prompt: \(userPrompt.prefix(80))…
-        • Gemini: \(agentReplies[.gemini]  ?? "")
-        • Claude: \(agentReplies[.claude]  ?? "")
-        • Mistral: \(agentReplies[.mistral] ?? "")
+        try await Task.sleep(for: .milliseconds(1_500))
+        return """
+        ✅ Finale Prüfung (ChatGPT):
+        • Gemini: \(agentReplies[.gemini]  ?? "–")
+        • Claude: \(agentReplies[.claude]  ?? "–")
+        • Mistral: \(agentReplies[.mistral] ?? "–")
         """
     }
 }

@@ -23,7 +23,12 @@ struct GridAgentCardsView: View {
                     if agent == .chatgpt { return step.finalReply ?? "" }
                     return step.reply(for: agent) ?? ""
                 }()
-                AgentCardView(agent: agent, agentResponse: reply, isGridLayout: true)
+                AgentCardView(
+                    agent: agent,
+                    agentResponse: reply,
+                    userPrompt: step.userPrompt,
+                    isGridLayout: true
+                )
             }
         }
         .padding(.horizontal, 4)
@@ -34,10 +39,10 @@ struct GridAgentCardsView: View {
 
 #Preview("GridAgentCardsView – Beispiel") {
     var step = ChatStep(userPrompt: "Wie setze ich MVVM in SwiftUI um?")
-    step.setAgentReply(agent: .gemini,  text: "MVVM trennt View, ViewModel und Model klar voneinander. Das ViewModel hält den State und veröffentlicht Änderungen via @Published.")
-    step.setAgentReply(agent: .claude,  text: "Nutze @StateObject für das ViewModel in der Root-View und @EnvironmentObject zum Weitergeben an Kind-Views.")
-    step.setAgentReply(agent: .mistral, text: "Kurz: ViewModel = State + Logik. View = nur Rendering. Kein Business-Code direkt in Views.")
-    step.setFinalReply(text: "MVVM ist der empfohlene Ansatz in SwiftUI. ViewModel als @MainActor markieren für Thread-Sicherheit bei async/await.")
+    step.setAgentReply(agent: .gemini,  text: "MVVM trennt View, ViewModel und Model klar voneinander.")
+    step.setAgentReply(agent: .claude,  text: "Nutze @StateObject für das ViewModel in der Root-View.")
+    step.setAgentReply(agent: .mistral, text: "Kurz: ViewModel = State + Logik. View = nur Rendering.")
+    step.setFinalReply(text: "MVVM ist der empfohlene Ansatz in SwiftUI. ViewModel als @MainActor markieren.")
 
     return ZStack {
         Image("background").resizable().scaledToFill().ignoresSafeArea()

@@ -31,19 +31,14 @@ final class ConversationViewModel: ObservableObject {
         self.service = service
         let persistedRounds = PersistenceManager.loadRounds()
         if !persistedRounds.isEmpty {
-            // Gespeicherte Runden haben Vorrang
             self.rounds = persistedRounds
         } else if service is MockConversationService {
-            // Mock-Daten nur als Fallback für Previews / ersten Start ohne Keys
             self.rounds = Self.makeMockRounds()
         }
-        // Echter Service + keine Persistenz → leere Liste (Nutzer startet frisch)
     }
 
     // MARK: - Service-Wechsel
 
-    /// Tauscht den aktiven Service aus (z.B. nach Onboarding oder Settings-Änderung).
-    /// Lädt bestehende Persistenz neu; bei leerer Persistenz startet die Liste frisch.
     func updateService(_ newService: ConversationProtocol) {
         service = newService
         rounds = PersistenceManager.loadRounds()
@@ -68,15 +63,25 @@ final class ConversationViewModel: ObservableObject {
         PersistenceManager.saveRounds(rounds)
     }
 
+    /// Löscht eine Runde anhand ihrer ID und korrigiert den Auswahlindex.
+    func deleteRound(withId roundId: String) {
+        guard let indexValue = rounds.firstIndex(where: { $0.id == roundId }) else { return }
+        rounds.remove(at: indexValue)
+        if rounds.isEmpty {
+            selectedRoundIndex = 0
+        } else {
+            selectedRoundIndex = min(selectedRoundIndex, rounds.count - 1)
+        }
+        PersistenceManager.saveRounds(rounds)
+    }
+
     // MARK: - Free-Flow-Schritt
 
     /// Nutzerprompt → drei Agenten antworten progressiv → ChatGPT prüft final.
-    /// Jede Agentenkarte aktualisiert sich, sobald ihre Antwort eintrifft (kein Warten auf alle).
     func runFreeFlowStep() {
         let prompt = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { return }
 
-        // Neue Runde anlegen, falls keine vorhanden oder Index ungültig
         if rounds.isEmpty || !rounds.indices.contains(selectedRoundIndex) {
             createNewRound()
         }
@@ -85,19 +90,14 @@ final class ConversationViewModel: ObservableObject {
         inputText = ""
 
         Task {
-            // Index einfrieren – der Nutzer könnte während des Requests die Runde wechseln
             let roundIndex = selectedRoundIndex
             guard rounds.indices.contains(roundIndex) else { isBusy = false; return }
 
             let stepId = rounds[roundIndex].addStep(userPrompt: prompt)
-            // addStep setzt den Rundentitel automatisch beim ersten Step
-            // @Published löst hier bereits einen UI-Redraw aus (leere Karten = Ladezustand)
 
             do {
-                // 1) Planung – Service gibt pro Agent einen optimierten Teilprompt zurück
                 let plannedPrompts = try await service.planAgentPrompts(for: prompt)
 
-                // 2) Drei Agenten parallel starten – UI-Update sobald jede Antwort eintrifft
                 await withTaskGroup(of: (AgentType, String).self) { group in
                     for agent in [AgentType.gemini, .claude, .mistral] {
                         let agentPrompt = plannedPrompts[agent] ?? prompt
@@ -107,7 +107,6 @@ final class ConversationViewModel: ObservableObject {
                             return (agent, reply)
                         }
                     }
-                    // Progressives UI-Update: sofort wenn ein Agent antwortet
                     for await (agent, reply) in group {
                         rounds[roundIndex].applyToStep(id: stepId) { step in
                             step.setAgentReply(agent: agent, text: reply)
@@ -115,11 +114,9 @@ final class ConversationViewModel: ObservableObject {
                     }
                 }
 
-                // 3) Gesammelte Antworten für ChatGPT-Finalprüfung
                 let agentReplies = rounds[roundIndex].steps
                     .first { $0.id == stepId }?.agentReplies ?? [:]
 
-                // 4) ChatGPT prüft und fasst alle drei Perspektiven zusammen
                 let finalText = try await service.makeFinalReply(from: agentReplies,
                                                                  userPrompt: prompt)
                 rounds[roundIndex].applyToStep(id: stepId) { step in
@@ -127,7 +124,6 @@ final class ConversationViewModel: ObservableObject {
                 }
 
             } catch {
-                // Fehler als lesbarer Text – kein Crash, kein Datenverlust
                 rounds[roundIndex].applyToStep(id: stepId) { step in
                     step.setFinalReply(text: "Fehler: \(error.localizedDescription)")
                 }
@@ -145,13 +141,12 @@ final class ConversationViewModel: ObservableObject {
         return rounds[selectedRoundIndex]
     }
 
+    var currentRoundId: String? { currentRound?.id }
     var currentSteps: [ChatStep] { currentRound?.steps ?? [] }
-
     var currentLastStepId: String? { currentRound?.lastStep?.id }
 
     // MARK: - Private Helfer
 
-    /// Ruft einen Agenten auf und fängt Fehler als Anzeigetext ab (wirft nie).
     private func safeAgentReply(for agent: AgentType, plannedPrompt: String) async -> String {
         do {
             return try await service.fetchAgentReply(for: agent, plannedPrompt: plannedPrompt)
@@ -162,7 +157,6 @@ final class ConversationViewModel: ObservableObject {
         }
     }
 
-    /// Statische Mock-Daten – nur beim MockConversationService und leerer Persistenz.
     private static func makeMockRounds() -> [ConversationRound] {
         var roundOne = ConversationRound(title: "SwiftUI & MVVM Basics")
         let stepOneId = roundOne.addStep(userPrompt: "Wie setze ich MVVM pragmatisch in SwiftUI um?")
@@ -172,7 +166,6 @@ final class ConversationViewModel: ObservableObject {
             step.setAgentReply(agent: .mistral, text: "Ergebnis: besser testbar und gut wartbar.")
             step.setFinalReply(text: "Insgesamt sinnvoll: VM als Source of Truth, Views bleiben schlank.")
         }
-
         var roundTwo = ConversationRound(title: "KI-Agenten – Zusammenarbeit")
         let stepTwoId = roundTwo.addStep(userPrompt: "Wie können mehrere KIs sinnvoll zusammenarbeiten?")
         roundTwo.applyToStep(id: stepTwoId) { step in
@@ -181,7 +174,6 @@ final class ConversationViewModel: ObservableObject {
             step.setAgentReply(agent: .mistral, text: "Mistral destilliert kurze, prägnante Kernaussagen.")
             step.setFinalReply(text: "ChatGPT prüft, ob alles konsistent zur Benutzereingabe passt.")
         }
-
         return [roundOne, roundTwo]
     }
 }
