@@ -13,11 +13,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square)](LICENSE)
 [![Platforms](https://img.shields.io/badge/Platforms-iPhone%20%7C%20iPad-8E44AD?style=flat-square&logo=apple)](https://developer.apple.com)
 
-<br/>
 
-<img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/hero.jpg" alt="ONE App Screenshot" width="320"/>
-
-<br/><br/>
 
 > ONE sends your prompt simultaneously to **Gemini**, **Claude**, **Mistral** and **ChatGPT** —  
 > streams every token live — then lets ChatGPT synthesise all three answers into one verdict.
