@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 
 /// Hauptansicht des ONE-Chats – verbindet TopBar, Gesprächsverlauf, InputBar und Sidebar.
 /// MVVM: ViewModel ist die Source of Truth, die View reagiert nur auf Zustandsänderungen.
