@@ -42,6 +42,8 @@ struct OneApp: App {
                 .environmentObject(conversationViewModel)
                 .fullScreenCover(isPresented: $showOnboarding) {
                     OnboardingView {
+                        // Lösche Mock-Daten bevor echte API gestartet wird
+                        PersistenceManager.shared.clearRounds()
                         conversationViewModel.updateService(RealConversationService())
                         showOnboarding = false
                     }
