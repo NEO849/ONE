@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/NEO849/ONE/main/logo.jpg" alt="ONE App Logo" width="140" style="border-radius: 22px;"/>
+<img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/icon.jpg" alt="ONE App Icon" width="120" style="border-radius: 26px;"/>
 
 # ONE — Parallel AI Chat for iOS
 
@@ -11,12 +11,29 @@
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-5-0071E3?style=flat-square&logo=swift&logoColor=white)](https://developer.apple.com/xcode/swiftui/)
 [![Xcode](https://img.shields.io/badge/Xcode-15.2%2B-147EFB?style=flat-square&logo=xcode&logoColor=white)](https://developer.apple.com/xcode/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square)](LICENSE)
-[![Platforms](https://img.shields.io/badge/Platforms-iPhone%20%7C%20iPad-8E44AD?style=flat-square&logo=apple)]()
+[![Platforms](https://img.shields.io/badge/Platforms-iPhone%20%7C%20iPad-8E44AD?style=flat-square&logo=apple)](https://developer.apple.com)
 
-<img src="https://raw.githubusercontent.com/NEO849/ONE/main/onetext.png" alt="ONE" width="220"/>
+<br/>
+
+<img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/hero.jpg" alt="ONE App Screenshot" width="320"/>
+
+<br/><br/>
 
 > ONE sends your prompt simultaneously to **Gemini**, **Claude**, **Mistral** and **ChatGPT** —  
 > streams every token live — then lets ChatGPT synthesise all three answers into one verdict.
+
+</div>
+
+---
+
+## Screenshots
+
+<div align="center">
+
+| Grid Layout | Agent Detail | Full Answer Sheet | Welcome Screen |
+|:-----------:|:------------:|:-----------------:|:--------------:|
+| <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/grid.jpg" width="160"/> | <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/agent_card.jpg" width="160"/> | <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/sheet.jpg" width="160"/> | <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/welcome.jpg" width="160"/> |
+| 2×2 grid with live streaming | Individual agent card | Full response + copy | First launch |
 
 </div>
 
@@ -28,7 +45,7 @@ ONE is a native **SwiftUI** app for iOS that eliminates the "which AI should I a
 
 ---
 
-## Feature Showcase
+## Features
 
 ### Core Experience
 
@@ -57,7 +74,7 @@ ONE is a native **SwiftUI** app for iOS that eliminates the "which AI should I a
 ### Polish
 
 - **Dark Mode** throughout — glass morphism design system
-- **VoiceOver Accessibility** — all interactive elements labelled
+- **VoiceOver Accessibility** — all interactive elements fully labelled with `.accessibilityLabel`, hints, and `.updatesFrequently` for streaming text
 - **Auto-scroll** to latest message
 - **Keyboard-aware** input bar via `safeAreaInset`
 - **Welcome screen** on fresh start or "New Chat"
@@ -86,7 +103,7 @@ Strict **MVVM** with Dependency Injection via protocol. Zero business logic in V
 ┌────────────────────▼────────────────────────────────────────────┐
 │                     ViewModel Layer                             │
 │  ConversationViewModel   @MainActor                             │
-│  ├── orchestrate(prompt:)  → plan → parallel → synthesise       │
+│  ├── runFreeFlowStep()   plan → parallel stream → synthesise    │
 │  ├── @Published var rounds: [ConversationRound]                 │
 │  └── @Published var layoutMode: LayoutMode                      │
 └────────────────────┬────────────────────────────────────────────┘
@@ -94,7 +111,7 @@ Strict **MVVM** with Dependency Injection via protocol. Zero business logic in V
           ┌──────────┴───────────┐
           ▼                      ▼
    RealConversationService   MockConversationService
-   ├── GeminiAPIClient           (realistic delays,
+   ├── GeminiAPIClient           (word-by-word typing effect,
    ├── ClaudeAPIClient            no real keys needed)
    ├── MistralAPIClient
    └── ChatGPTAPIClient
@@ -118,8 +135,8 @@ Strict **MVVM** with Dependency Injection via protocol. Zero business logic in V
 | `withTaskGroup` for parallel calls | Progressive UI: each card fills the moment *its* agent responds |
 | `@MainActor` ViewModel | All `@Published` mutations on main thread — no `DispatchQueue` noise |
 | Value types (`struct`) for models | Thread-safe by default; copy semantics prevent async race conditions |
-| `CodingKeyRepresentable` on `AgentType` | `[AgentType: String]` round-trips through `JSONEncoder` as a JSON object |
-| `safeAgentReply` helper | Network errors become readable strings — the app never crashes on API failure |
+| Protocol-extension streaming defaults | `fetchAgentStream` / `makeFinalStream` have fallback wrappers — no breaking change |
+| `streamAgentReply` helper | Per-token UI updates accumulate in-place — smooth typing illusion |
 
 ---
 
@@ -128,36 +145,42 @@ Strict **MVVM** with Dependency Injection via protocol. Zero business logic in V
 ```swift
 // ConversationProtocol.swift
 protocol ConversationProtocol {
-    /// Phase 1: optional planning step
-    func planStep(for prompt: String) async throws -> String
-
-    /// Phase 2: fetch agent stream — yields tokens as they arrive
+    // Phase 2: fetch agent stream — yields tokens as they arrive
     func fetchAgentStream(
-        agent: AgentType,
-        prompt: String,
-        plan: String
+        for agent: AgentType,
+        plannedPrompt: String
     ) -> AsyncThrowingStream<String, Error>
 
-    /// Phase 3: final ChatGPT synthesis of all three answers
+    // Phase 3: final ChatGPT synthesis of all three answers
     func makeFinalStream(
-        prompt: String,
-        agentAnswers: [AgentType: String]
+        from agentReplies: [AgentType: String],
+        userPrompt: String
     ) -> AsyncThrowingStream<String, Error>
 }
 ```
 
-Each `AsyncThrowingStream` maps directly to a live SSE connection. The ViewModel consumes all four streams concurrently via `withTaskGroup`, publishing token deltas to `@Published` properties that drive the UI:
+The ViewModel consumes all three agent streams **concurrently** via `withTaskGroup`. Each token update writes directly to the corresponding agent card in real time:
 
 ```swift
-// ConversationViewModel.swift  (simplified)
+// ConversationViewModel.swift
 await withTaskGroup(of: Void.self) { group in
-    for agent in AgentType.parallelAgents {
+    for agent in [AgentType.gemini, .claude, .mistral] {
+        let agentPrompt = plannedPrompts[agent] ?? prompt
         group.addTask {
-            for try await token in service.fetchAgentStream(agent: agent, prompt: prompt, plan: plan) {
-                await MainActor.run { self.appendToken(token, for: agent) }
-            }
+            await self.streamAgentReply(
+                agent: agent,
+                plannedPrompt: agentPrompt,
+                into: roundIndex,
+                stepId: stepId
+            )
         }
     }
+    for await _ in group { }  // wait for all three
+}
+// Then stream the ChatGPT synthesis
+for try await token in service.makeFinalStream(from: agentReplies, userPrompt: prompt) {
+    finalAccumulated += token
+    // update UI per token …
 }
 ```
 
@@ -170,9 +193,8 @@ await withTaskGroup(of: Void.self) { group in
 | Language | Swift 5.9 |
 | UI Framework | SwiftUI |
 | Concurrency | Swift Structured Concurrency (`async/await`, `withTaskGroup`, `AsyncThrowingStream`) |
-| Streaming | Server-Sent Events (SSE) over `URLSession` byte-stream |
+| Streaming | Server-Sent Events (SSE) via `URLSession.bytes(for:).lines` |
 | Persistence | `UserDefaults` (JSON) + iOS Keychain (`Security` framework) |
-| Networking | `URLSession` with `async/throws` wrappers |
 | AI APIs | Google Gemini 1.5 Flash · Anthropic Claude 3.5 Haiku · Mistral Small · OpenAI GPT-4o Mini |
 | Min. Deployment | iOS 17.0 |
 | Toolchain | Xcode 15.2+ |
@@ -185,15 +207,15 @@ await withTaskGroup(of: Void.self) { group in
 
 - Xcode 15.2 or newer
 - iOS 17+ device or simulator
-- API keys for at least one provider (free tiers available for Gemini and Mistral)
+- API key for at least one provider (free tiers available for Gemini and Mistral)
 
 ### API Key Registration
 
 | Provider | Console | Free Tier |
 |---|---|---|
-| **Gemini** | [Google AI Studio](https://aistudio.google.com/apikey) | Yes — generous quota |
+| **Gemini** | [Google AI Studio](https://aistudio.google.com/apikey) | ✅ Generous quota |
 | **Claude** | [Anthropic Console](https://console.anthropic.com/) | Pay-as-you-go |
-| **Mistral** | [Mistral AI Platform](https://console.mistral.ai/) | Yes — free tier |
+| **Mistral** | [Mistral AI Platform](https://console.mistral.ai/) | ✅ Free tier |
 | **ChatGPT** | [OpenAI Platform](https://platform.openai.com/api-keys) | Pay-as-you-go |
 
 ### Installation
@@ -211,26 +233,38 @@ open ONE.xcodeproj
 
 > **Need to update keys later?** Tap **⚙️** in the top bar at any time.
 
-### Developer Setup (Optional — for key injection in DEBUG builds)
+### Developer Setup (key injection for DEBUG builds)
 
 ```bash
-# Copy the secrets template
-cp ONE/Configuration/Secrets.xcconfig.template ONE/Configuration/Secrets.local.xcconfig
-
-# Or use the provided setup script
+# Option A: run the setup script (reads keys from ~/.bashrc / shell env)
 bash scripts/setup-secrets.sh
+
+# Option B: copy the template manually
+cp ONE/Configuration/Secrets.xcconfig.template ONE/Configuration/Secrets.local.xcconfig
+# then fill in your keys — file is gitignored
 ```
 
-Then open `Secrets.local.xcconfig` and fill in your keys. The file is gitignored by default. In DEBUG builds, `DeveloperKeyInjector.swift` reads these values and pre-populates the Keychain so you skip the Onboarding screen.
+In DEBUG builds, `DeveloperKeyInjector` reads these values at launch and writes them to the Keychain automatically — you skip Onboarding entirely:
 
 ```swift
-// DeveloperKeyInjector.swift  (DEBUG only)
+// DeveloperKeyInjector.swift  (#if DEBUG only — never ships)
 #if DEBUG
-struct DeveloperKeyInjector {
+enum DeveloperKeyInjector {
     static func injectIfNeeded() {
-        // Reads from Secrets.local.xcconfig via Bundle infoPlist entries
-        // and writes to Keychain via SecureKeyManager
-        // Never compiled into Release builds
+        let environment = ProcessInfo.processInfo.environment
+        let keyMapping: [(SecureKeyManager.APIKey, String)] = [
+            (.gemini,  "GEMINI_API_KEY"),
+            (.claude,  "CLAUDE_API_KEY"),
+            (.mistral, "MISTRAL_API_KEY"),
+            (.chatGPT, "CHATGPT_API_KEY")
+        ]
+        for (apiKey, envVarName) in keyMapping {
+            guard let rawValue = environment[envVarName],
+                  !rawValue.isEmpty,
+                  SecureKeyManager.load(key: apiKey) == nil
+            else { continue }
+            SecureKeyManager.save(key: apiKey, value: rawValue)
+        }
     }
 }
 #endif
@@ -254,33 +288,32 @@ ONE/
 │   │   ├── LayoutMode.swift               Enum: grid | stacked
 │   │   └── ONEAPIError.swift              Typed errors for all 4 APIs
 │   └── Service/
-│       ├── ConversationProtocol.swift     DI interface (plan → fetch → finalise)
-│       ├── MockConversationService.swift  Fake service with realistic delays
+│       ├── ConversationProtocol.swift     DI interface + streaming defaults
+│       ├── MockConversationService.swift  Word-by-word typing effect (60ms/word)
 │       └── Real/
-│           ├── GeminiAPIClient.swift      SSE streaming via Gemini API
-│           ├── ClaudeAPIClient.swift      SSE streaming via Anthropic API
-│           ├── MistralAPIClient.swift     SSE streaming via Mistral API
-│           ├── ChatGPTAPIClient.swift     SSE streaming via OpenAI API
+│           ├── GeminiAPIClient.swift      SSE via streamGenerateContent?alt=sse
+│           ├── ClaudeAPIClient.swift      SSE via Anthropic content_block_delta
+│           ├── MistralAPIClient.swift     SSE via OpenAI-compatible format
+│           ├── ChatGPTAPIClient.swift     SSE via OpenAI chat completions
 │           └── RealConversationService.swift  Orchestrates all 4 clients
 ├── UI/
 │   ├── Components/
 │   │   ├── AgentCardView.swift            Shimmer | error | streaming text card
 │   │   ├── GridAgentCardsView.swift       2×2 equal-size grid
-│   │   ├── StackedAgentCardsView.swift    Tappable offset deck
+│   │   ├── StackedAgentCardsView.swift    Offset deck layout
 │   │   ├── HistorySidebarView.swift       Slide-in sidebar, swipe-to-delete
 │   │   ├── UserPromptBubbleView.swift
 │   │   └── Subviews/
 │   │       ├── FullAnswerAgentSheet.swift  Full text + copy-to-clipboard
 │   │       └── LeftAgentNameRailView.swift
 │   ├── Styles/
-│   │   ├── AgentTheme.swift               Per-agent colours & gradients
+│   │   ├── AgentTheme.swift               Per-agent colours & asset names
 │   │   ├── GlassStyles.swift              .glassCard() ViewModifier
 │   │   ├── GlassLightSweepModifier.swift
 │   │   ├── GlassTiltModifier.swift
-│   │   ├── GlassWowCardModifier.swift
-│   │   └── KeyboardObserver.swift
+│   │   └── GlassWowCardModifier.swift
 │   └── Views/
-│       ├── ContentView.swift              Main screen — wires all components
+│       ├── ContentView.swift              Main screen
 │       ├── ChatMessageListView.swift      Scroll list + welcome empty state
 │       ├── GlassCardInputField.swift      Keyboard-aware glass input bar
 │       ├── OnboardingView.swift           First-launch key setup
@@ -289,21 +322,10 @@ ONE/
 ├── Debug/
 │   └── DeveloperKeyInjector.swift        DEBUG-only key bootstrapping
 ├── Configuration/
-│   └── Secrets.xcconfig.template         Committed template (no real keys)
+│   └── Secrets.xcconfig.template         Committed template (no real values)
 └── ViewModel/
     └── ConversationViewModel.swift        @MainActor source of truth
 ```
-
----
-
-## Coding Standards
-
-- No business logic in Views — Views are pure rendering
-- No force-unwraps (`!`) in production code
-- `#Preview` macro in every View file
-- Errors are always surfaced as readable UI — never silently ignored
-- German inline comments explaining *why*, not *what*
-- All identifier names ≥ 4 characters (except `id`)
 
 ---
 
@@ -315,17 +337,15 @@ ONE/
 | ✅ Done | 3-stage orchestration (Plan → Parallel → Synthesise) |
 | ✅ Done | 2 layout modes with animated toggle |
 | ✅ Done | Skeleton shimmer & error cards |
-| ✅ Done | Keychain security via `SecureKeyManager` |
+| ✅ Done | Keychain security + git-safe secret config |
 | ✅ Done | Onboarding + Settings flow |
-| ✅ Done | Conversation history with persistence |
-| ✅ Done | VoiceOver Accessibility |
+| ✅ Done | Conversation history with JSON persistence |
+| ✅ Done | VoiceOver Accessibility (full coverage) |
 | ✅ Done | Dark Mode + Glass design system |
 | 🔄 In Progress | iPad & Landscape layout optimisation |
 | 📋 Planned | Unit tests for ViewModel and API clients |
-| 📋 Planned | Widget Extension — latest summary on Home Screen |
-| 📋 Planned | Custom agent selection (add/remove providers) |
-| 📋 Planned | Prompt templates & favourites |
 | 📋 Planned | TestFlight distribution |
+| 📋 Planned | Custom agent selection (add/remove providers) |
 | 💡 Idea | macOS (Catalyst) support |
 | 💡 Idea | Local LLM support (Ollama) |
 
@@ -337,38 +357,26 @@ Contributions, bug reports, and feature requests are welcome!
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes following the existing coding standards
+3. Follow the existing MVVM structure — no business logic in Views
 4. Open a Pull Request with a clear description
 
-For larger changes, please open an issue first to discuss the approach.
+For larger changes, please open an issue first.
 
 ---
 
 ## License
 
-```
-MIT License
+MIT License — Copyright © 2025–2026 Michael Fleps
 
-Copyright (c) 2025–2026 Michael Fleps
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
-```
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.
 
 ---
 
 <div align="center">
 
-Built with SwiftUI · Powered by Gemini, Claude, Mistral & ChatGPT
+<img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/logo.jpg" alt="ONE" width="80" style="border-radius: 16px; opacity: 0.8;"/>
+
+**Built with SwiftUI · Powered by Gemini, Claude, Mistral & ChatGPT**
 
 <sub>© 2025–2026 Michael Fleps — MIT License</sub>
 
