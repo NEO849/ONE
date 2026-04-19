@@ -8,9 +8,11 @@
 import SwiftUI
 
 /// App-Einstieg.
-/// Entscheidet beim Start:
-/// - Alle vier API-Keys im Keychain → RealConversationService
-/// - Fehlende Keys → MockConversationService + OnboardingView als fullScreenCover
+/// Ablauf beim Start:
+///   1. DEBUG: DeveloperKeyInjector füllt Keychain aus Scheme-Env-Vars (einmalig)
+///   2. SecureKeyManager prüft ob alle 4 Keys vorhanden sind
+///   3. Keys vorhanden → RealConversationService
+///      Keys fehlen   → MockConversationService + OnboardingView als fullScreenCover
 @main
 struct OneApp: App {
 
@@ -18,10 +20,16 @@ struct OneApp: App {
     @State private var showOnboarding: Bool
 
     init() {
+        // Entwickler-Keys aus Xcode Scheme → Keychain (nur DEBUG, nie RELEASE)
+        #if DEBUG
+        DeveloperKeyInjector.injectIfNeeded()
+        #endif
+
         let keysPresent = SecureKeyManager.allKeysPresent()
         let initialService: ConversationProtocol = keysPresent
             ? RealConversationService()
             : MockConversationService()
+
         _conversationViewModel = StateObject(
             wrappedValue: ConversationViewModel(service: initialService)
         )
@@ -33,7 +41,6 @@ struct OneApp: App {
             ContentView()
                 .environmentObject(conversationViewModel)
                 .fullScreenCover(isPresented: $showOnboarding) {
-                    // Nach erfolgreichem Onboarding: auf echten Service wechseln
                     OnboardingView {
                         conversationViewModel.updateService(RealConversationService())
                         showOnboarding = false

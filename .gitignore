@@ -1,0 +1,76 @@
+# ============================================================
+# iOS / Xcode
+# ============================================================
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.xcarchive
+*.dSYM.zip
+*.dSYM
+.DS_Store
+
+# ============================================================
+# Swift Package Manager
+# ============================================================
+.build/
+.swiftpm/
+Package.resolved
+
+# ============================================================
+# CocoaPods
+# ============================================================
+Pods/
+*.xcworkspace
+!default.xcworkspace
+
+# ============================================================
+# SECRETS – NIEMALS COMMITTEN
+# ============================================================
+# Lokale API-Key-Konfiguration (generiert von scripts/setup-secrets.sh)
+Secrets.local.xcconfig
+ONE/Configuration/Secrets.local.xcconfig
+*.local.xcconfig
+
+# Lokale Umgebungs-Dateien
+.env
+.env.local
+.env.*.local
+
+# Xcode-Scheme-Dateien mit eingebetteten Keys (xcuserdata ist bereits oben)
+*.xcscheme.user
+
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon\r
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ============================================================
+# Misc
+# ============================================================
+*.log
+tmp/
+.tmp/
