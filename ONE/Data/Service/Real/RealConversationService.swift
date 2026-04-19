@@ -28,10 +28,8 @@ struct RealConversationService: ConversationProtocol {
         static let chatgpt = "Du bist ein kritischer Prüfer. Die anderen drei KI-Agenten haben bereits geantwortet. Fasse ihre Kernaussagen zusammen, erkenne Widersprüche und liefere eine finale, ausgewogene Antwort auf Deutsch."
     }
 
-    // MARK: - ConversationProtocol
+    // MARK: - ConversationProtocol (Batch)
 
-    /// Bereitet agentenspezifische Prompts vor.
-    /// Jeder Agent erhält denselben Nutzer-Prompt – der System-Kontext gibt die Rolle vor.
     func planAgentPrompts(for userPrompt: String) async throws -> [AgentType: String] {
         return [
             .gemini:  userPrompt,
@@ -40,8 +38,6 @@ struct RealConversationService: ConversationProtocol {
         ]
     }
 
-    /// Ruft die Antwort eines einzelnen Agenten ab.
-    /// Fehler werden als typisierten ONEAPIError weitergereicht.
     func fetchAgentReply(for agent: AgentType, plannedPrompt: String) async throws -> String {
         switch agent {
         case .gemini:
@@ -53,7 +49,6 @@ struct RealConversationService: ConversationProtocol {
                 systemInstruction: AgentSystemPrompt.gemini,
                 apiKey: apiKey
             )
-
         case .claude:
             guard let apiKey = SecureKeyManager.load(key: .claude) else {
                 throw ONEAPIError.missingAPIKey(.claude)
@@ -63,7 +58,6 @@ struct RealConversationService: ConversationProtocol {
                 systemInstruction: AgentSystemPrompt.claude,
                 apiKey: apiKey
             )
-
         case .mistral:
             guard let apiKey = SecureKeyManager.load(key: .mistral) else {
                 throw ONEAPIError.missingAPIKey(.mistral)
@@ -73,7 +67,6 @@ struct RealConversationService: ConversationProtocol {
                 systemInstruction: AgentSystemPrompt.mistral,
                 apiKey: apiKey
             )
-
         case .chatgpt:
             guard let apiKey = SecureKeyManager.load(key: .chatGPT) else {
                 throw ONEAPIError.missingAPIKey(.chatgpt)
@@ -86,15 +79,97 @@ struct RealConversationService: ConversationProtocol {
         }
     }
 
-    /// Generiert die finale ChatGPT-Antwort basierend auf den drei Agenten-Antworten.
-    /// Alle Antworten werden als Kontext gebundelt und zur Synthese an ChatGPT gesendet.
     func makeFinalReply(from agentReplies: [AgentType: String], userPrompt: String) async throws -> String {
         guard let apiKey = SecureKeyManager.load(key: .chatGPT) else {
             throw ONEAPIError.missingAPIKey(.chatgpt)
         }
+        let contextPrompt = buildFinalContextPrompt(agentReplies: agentReplies, userPrompt: userPrompt)
+        return try await chatGPTClient.fetchReply(
+            prompt: contextPrompt,
+            systemInstruction: AgentSystemPrompt.chatgpt,
+            apiKey: apiKey
+        )
+    }
 
-        // Kontext-Prompt mit allen drei Agenten-Antworten aufbauen
-        var parts: [String] = [
+    // MARK: - ConversationProtocol (Streaming)
+
+    /// Überschreibt den Protocol-Extension-Fallback mit echter SSE-Anbindung.
+    func fetchAgentStream(for agent: AgentType, plannedPrompt: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    switch agent {
+                    case .gemini:
+                        guard let apiKey = SecureKeyManager.load(key: .gemini) else {
+                            continuation.finish(throwing: ONEAPIError.missingAPIKey(.gemini))
+                            return
+                        }
+                        for try await token in geminiClient.fetchReplyStream(
+                            prompt: plannedPrompt,
+                            systemInstruction: AgentSystemPrompt.gemini,
+                            apiKey: apiKey
+                        ) { continuation.yield(token) }
+
+                    case .claude:
+                        guard let apiKey = SecureKeyManager.load(key: .claude) else {
+                            continuation.finish(throwing: ONEAPIError.missingAPIKey(.claude))
+                            return
+                        }
+                        for try await token in claudeClient.fetchReplyStream(
+                            prompt: plannedPrompt,
+                            systemInstruction: AgentSystemPrompt.claude,
+                            apiKey: apiKey
+                        ) { continuation.yield(token) }
+
+                    case .mistral:
+                        guard let apiKey = SecureKeyManager.load(key: .mistral) else {
+                            continuation.finish(throwing: ONEAPIError.missingAPIKey(.mistral))
+                            return
+                        }
+                        for try await token in mistralClient.fetchReplyStream(
+                            prompt: plannedPrompt,
+                            systemInstruction: AgentSystemPrompt.mistral,
+                            apiKey: apiKey
+                        ) { continuation.yield(token) }
+
+                    case .chatgpt:
+                        break
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    /// Überschreibt den Protocol-Extension-Fallback mit echtem ChatGPT-Streaming.
+    func makeFinalStream(from agentReplies: [AgentType: String], userPrompt: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    guard let apiKey = SecureKeyManager.load(key: .chatGPT) else {
+                        continuation.finish(throwing: ONEAPIError.missingAPIKey(.chatgpt))
+                        return
+                    }
+                    let contextPrompt = buildFinalContextPrompt(agentReplies: agentReplies, userPrompt: userPrompt)
+                    for try await token in chatGPTClient.fetchReplyStream(
+                        prompt: contextPrompt,
+                        systemInstruction: AgentSystemPrompt.chatgpt,
+                        apiKey: apiKey
+                    ) { continuation.yield(token) }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    // MARK: - Private Helfer
+
+    private func buildFinalContextPrompt(agentReplies: [AgentType: String], userPrompt: String) -> String {
+        [
             "Nutzerfrage: \(userPrompt)",
             "",
             "[Gemini – Recherche]: \(agentReplies[.gemini] ?? "Keine Antwort")",
@@ -104,12 +179,6 @@ struct RealConversationService: ConversationProtocol {
             "[Mistral – Kompakt]: \(agentReplies[.mistral] ?? "Keine Antwort")",
             "",
             "Prüfe die drei Antworten, erkenne Gemeinsamkeiten und Widersprüche, und liefere eine präzise, ausgewogene Zusammenfassung auf Deutsch."
-        ]
-
-        return try await chatGPTClient.fetchReply(
-            prompt: parts.joined(separator: "\n"),
-            systemInstruction: AgentSystemPrompt.chatgpt,
-            apiKey: apiKey
-        )
+        ].joined(separator: "\n")
     }
 }

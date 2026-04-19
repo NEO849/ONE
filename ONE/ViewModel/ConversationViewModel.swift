@@ -63,7 +63,6 @@ final class ConversationViewModel: ObservableObject {
         PersistenceManager.saveRounds(rounds)
     }
 
-    /// Löscht eine Runde anhand ihrer ID und korrigiert den Auswahlindex.
     func deleteRound(withId roundId: String) {
         guard let indexValue = rounds.firstIndex(where: { $0.id == roundId }) else { return }
         rounds.remove(at: indexValue)
@@ -75,9 +74,9 @@ final class ConversationViewModel: ObservableObject {
         PersistenceManager.saveRounds(rounds)
     }
 
-    // MARK: - Free-Flow-Schritt
+    // MARK: - Free-Flow-Schritt (Streaming)
 
-    /// Nutzerprompt → drei Agenten antworten progressiv → ChatGPT prüft final.
+    /// Nutzerprompt → drei Agenten streamen parallel Token für Token → ChatGPT prüft final.
     func runFreeFlowStep() {
         let prompt = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { return }
@@ -98,29 +97,32 @@ final class ConversationViewModel: ObservableObject {
             do {
                 let plannedPrompts = try await service.planAgentPrompts(for: prompt)
 
-                await withTaskGroup(of: (AgentType, String).self) { group in
+                // Alle drei Agenten streamen parallel – jede Task aktualisiert die UI pro Token.
+                await withTaskGroup(of: Void.self) { group in
                     for agent in [AgentType.gemini, .claude, .mistral] {
                         let agentPrompt = plannedPrompts[agent] ?? prompt
                         group.addTask {
-                            let reply = await self.safeAgentReply(for: agent,
-                                                                  plannedPrompt: agentPrompt)
-                            return (agent, reply)
+                            await self.streamAgentReply(
+                                agent: agent,
+                                plannedPrompt: agentPrompt,
+                                into: roundIndex,
+                                stepId: stepId
+                            )
                         }
                     }
-                    for await (agent, reply) in group {
-                        rounds[roundIndex].applyToStep(id: stepId) { step in
-                            step.setAgentReply(agent: agent, text: reply)
-                        }
-                    }
+                    for await _ in group { }
                 }
 
+                // Finale ChatGPT-Synthese ebenfalls streaming
                 let agentReplies = rounds[roundIndex].steps
                     .first { $0.id == stepId }?.agentReplies ?? [:]
 
-                let finalText = try await service.makeFinalReply(from: agentReplies,
-                                                                 userPrompt: prompt)
-                rounds[roundIndex].applyToStep(id: stepId) { step in
-                    step.setFinalReply(text: finalText)
+                var finalAccumulated = ""
+                for try await token in service.makeFinalStream(from: agentReplies, userPrompt: prompt) {
+                    finalAccumulated += token
+                    rounds[roundIndex].applyToStep(id: stepId) { step in
+                        step.setFinalReply(text: finalAccumulated)
+                    }
                 }
 
             } catch {
@@ -147,13 +149,32 @@ final class ConversationViewModel: ObservableObject {
 
     // MARK: - Private Helfer
 
-    private func safeAgentReply(for agent: AgentType, plannedPrompt: String) async -> String {
+    /// Iteriert einen AsyncThrowingStream und schreibt jeden Token direkt in die Karte.
+    private func streamAgentReply(
+        agent: AgentType,
+        plannedPrompt: String,
+        into roundIndex: Int,
+        stepId: String
+    ) async {
+        var accumulated = ""
         do {
-            return try await service.fetchAgentReply(for: agent, plannedPrompt: plannedPrompt)
+            for try await token in service.fetchAgentStream(for: agent, plannedPrompt: plannedPrompt) {
+                accumulated += token
+                rounds[roundIndex].applyToStep(id: stepId) { step in
+                    step.setAgentReply(agent: agent, text: accumulated)
+                }
+            }
         } catch let error as ONEAPIError {
-            return "[\(agent.displayName)] \(error.localizedDescription)"
+            let errorText = accumulated.isEmpty
+                ? "[\(agent.displayName)] \(error.localizedDescription)"
+                : accumulated
+            rounds[roundIndex].applyToStep(id: stepId) { step in
+                step.setAgentReply(agent: agent, text: errorText)
+            }
         } catch {
-            return "[\(agent.displayName)] Fehler: \(error.localizedDescription)"
+            rounds[roundIndex].applyToStep(id: stepId) { step in
+                step.setAgentReply(agent: agent, text: "[\(agent.displayName)] Fehler: \(error.localizedDescription)")
+            }
         }
     }
 
