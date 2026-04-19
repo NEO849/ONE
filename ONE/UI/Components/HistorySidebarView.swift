@@ -42,7 +42,7 @@ struct HistorySidebarView: View {
                     roundsList
                 }
                 .frame(width: drawerWidth, height: geometryProxy.size.height)
-                .background(.regularMaterial)
+                .background(Color.black.opacity(0.65))
                 .glassCard(cornerRadius: 0)
                 .offset(x: isOpen ? 0 : -drawerWidth)
                 .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isOpen)
