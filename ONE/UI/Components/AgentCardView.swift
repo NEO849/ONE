@@ -16,7 +16,7 @@ struct AgentCardView: View {
 
     let agent: AgentType
     let agentResponse: String
-    let userPrompt: String          // Kontext für FullAnswerAgentSheet
+    let userPrompt: String
     var isGridLayout: Bool = false
 
     @State private var showingSheet: Bool = false
@@ -24,10 +24,8 @@ struct AgentCardView: View {
 
     private var theme: AgentTheme { agent.theme }
 
-    // Zustandslogik
     private var isLoading: Bool { agentResponse.isEmpty }
     private var isErrorResponse: Bool {
-        // safeAgentReply schreibt "[DisplayName] Fehler:..." bei API-Fehlern
         agentResponse.hasPrefix("[\(agent.displayName)]")
     }
     private var displayedErrorMessage: String {
@@ -56,18 +54,21 @@ struct AgentCardView: View {
                 .resizable()
                 .scaledToFill()
                 .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius))
+                .accessibilityHidden(true)
 
-            // Stroke: orange bei Fehler, sonst Agenten-Akzentfarbe
             RoundedRectangle(cornerRadius: theme.cornerRadius)
                 .stroke(borderColor.opacity(0.85), lineWidth: theme.strokeWidth)
+                .accessibilityHidden(true)
 
             HStack(spacing: 0) {
                 LeftAgentNameRailView(
                     agentNameAssetName: theme.verticalAgentName,
                     accentColor: theme.accentColor
                 )
+                .accessibilityHidden(true)
 
                 GlassVerticalDivider()
+                    .accessibilityHidden(true)
 
                 if isLoading {
                     skeletonContent
@@ -112,6 +113,8 @@ struct AgentCardView: View {
                 .padding(.leading, contentLeadingPaddingValue)
                 .padding(.trailing, contentTrailingPaddingValue)
                 .padding(.bottom, 6)
+                .accessibilityLabel("\(agent.displayName): \(agentResponse)")
+                .accessibilityAddTraits(.updatesFrequently)
 
             Button("Mehr anzeigen") { showingSheet = true }
                 .font(.caption.weight(.semibold))
@@ -119,6 +122,8 @@ struct AgentCardView: View {
                 .padding(.leading, contentLeadingPaddingValue)
                 .padding(.trailing, contentTrailingPaddingValue)
                 .padding(.bottom, contentBottomPaddingValue)
+                .accessibilityLabel("Vollständige Antwort von \(agent.displayName) lesen")
+                .accessibilityHint("Öffnet ein Detail-Sheet mit der vollständigen Antwort")
         }
     }
 
@@ -132,6 +137,7 @@ struct AgentCardView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
                 Text("API-Fehler")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.orange)
@@ -148,6 +154,8 @@ struct AgentCardView: View {
 
             Spacer()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(agent.displayName), Fehler: \(displayedErrorMessage)")
     }
 
     // MARK: - Skeleton / Ladezustand
@@ -168,6 +176,9 @@ struct AgentCardView: View {
             }
         }
         .onDisappear { shimmerOpacity = 1.0 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(agent.displayName), lädt")
+        .accessibilityHint("Antwort wird generiert")
     }
 
     private func skeletonLine(trailingExtra: CGFloat) -> some View {
@@ -175,6 +186,7 @@ struct AgentCardView: View {
             .fill(Color.white.opacity(0.22))
             .frame(height: 11)
             .padding(.trailing, contentTrailingPaddingValue + trailingExtra)
+            .accessibilityHidden(true)
     }
 }
 

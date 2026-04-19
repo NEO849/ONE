@@ -24,6 +24,7 @@ struct FullAnswerAgentSheet: View {
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 0) {
                 headerBar
@@ -39,9 +40,11 @@ struct FullAnswerAgentSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .glassCard(cornerRadius: 10, borderColor: .white.opacity(0.15))
                     .padding(.bottom, 20)
+                    .accessibilityLabel("Deine Frage: \(userPrompt)")
 
                 GlassDivider()
                     .padding(.bottom, 20)
+                    .accessibilityHidden(true)
 
                 // Vollständige Antwort
                 ScrollView(showsIndicators: false) {
@@ -51,6 +54,8 @@ struct FullAnswerAgentSheet: View {
                         .foregroundStyle(.white.opacity(0.92))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, 40)
+                        .accessibilityLabel("Antwort von \(agent.displayName): \(fullResponse)")
+                        .accessibilityAddTraits(.updatesFrequently)
                 }
             }
             .padding(.horizontal, 24)
@@ -66,6 +71,7 @@ struct FullAnswerAgentSheet: View {
                 .scaledToFit()
                 .frame(height: 28)
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .accessibilityHidden(true)
 
             Text(agent.displayName)
                 .font(.title3.weight(.bold))
@@ -82,6 +88,7 @@ struct FullAnswerAgentSheet: View {
             HStack(spacing: 5) {
                 Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
                     .font(.caption.weight(.semibold))
+                    .accessibilityHidden(true)
                 Text(showCopied ? "Kopiert" : "Kopieren")
                     .font(.caption.weight(.semibold))
             }
@@ -95,6 +102,8 @@ struct FullAnswerAgentSheet: View {
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.2), value: showCopied)
+        .accessibilityLabel(showCopied ? "In Zwischenablage kopiert" : "Antwort kopieren")
+        .accessibilityHint(showCopied ? "" : "Kopiert die vollständige Antwort in die Zwischenablage")
     }
 
     // MARK: - Logik

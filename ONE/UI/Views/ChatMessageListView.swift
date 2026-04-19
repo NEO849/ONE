@@ -33,7 +33,6 @@ struct ChatMessageListView: View {
 
     // MARK: - Leerzustand
 
-    /// Wird beim ersten Öffnen oder nach 'New Chat' gezeigt.
     private var welcomeStateView: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -43,6 +42,7 @@ struct ChatMessageListView: View {
                 .scaledToFit()
                 .frame(height: 72)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .accessibilityHidden(true)
 
             Text("Stell deine erste Frage")
                 .font(.title3.weight(.semibold))
@@ -57,6 +57,8 @@ struct ChatMessageListView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Willkommen bei ONE. Stell deine erste Frage – Gemini, Claude, Mistral und ChatGPT antworten parallel.")
     }
 
     // MARK: - Chatliste
@@ -80,6 +82,7 @@ struct ChatMessageListView: View {
                     Color.clear
                         .frame(height: 22)
                         .id(bottomAnchorIdentifier)
+                        .accessibilityHidden(true)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)

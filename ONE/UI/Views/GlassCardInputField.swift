@@ -14,51 +14,55 @@ import SwiftUI
 /// - Sendet bei Return-Taste oder Senden-Button die Eingabe nach außen.
 struct GlassCardInputField: View {
 
-    @Binding var text: String                                                                          // Source of Truth kommt von außen
-    var isBusy: Bool = false                                                                           // Busy: sperrt Senden
-    var onSend: () -> Void                                                                             // Callback nach außen
+    @Binding var text: String
+    var isBusy: Bool = false
+    var onSend: () -> Void
 
-    @FocusState.Binding var isInputFocused: Bool                                                       // Fokus-Binding für Keyboard
+    @FocusState.Binding var isInputFocused: Bool
 
-    private let accentBlue: Color = .blue                                                              // Akzentfarbe
+    private let accentBlue: Color = .blue
 
     var body: some View {
         HStack(spacing: 14) {
-            TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)                         // Mehrzeilig möglich
+            TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .foregroundColor(.white.opacity(0.92))
-                .lineLimit(1...4)                                                                      // Max 4 Zeilen -> UI bleibt stabil
+                .lineLimit(1...4)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(.ultraThinMaterial)                                                        // Feld-Glas
+                .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(accentBlue.opacity(0.45), lineWidth: 1)
                         .shadow(color: accentBlue.opacity(0.25), radius: 6)
                 )
-                .focused($isInputFocused)                                                              // Fokus steuert Tastatur
-                .submitLabel(.send)                                                                    // „Senden“ auf der Tastatur
-                .onSubmit {                                                                            // Return-Taste sendet
-                    sendInputText()                                                                    // Gleiche Logik wie Button
+                .focused($isInputFocused)
+                .submitLabel(.send)
+                .onSubmit {
+                    sendInputText()
                 }
+                .accessibilityLabel("Nachricht eingeben")
+                .accessibilityHint("Deine Frage wird an alle vier KI-Agenten gesendet")
 
             Button {
-                sendInputText()                                                                        // Senden über Button
+                sendInputText()
             } label: {
                 Image(systemName: isBusy ? "hourglass" : "paperplane.fill")
                     .font(.title2)
                     .foregroundColor(accentBlue)
                     .rotationEffect(.degrees(isBusy ? 180 : 0))
                     .animation(.easeInOut(duration: 0.3), value: isBusy)
-                    .frame(width: 44, height: 44)                                                      // Fixe Touch-Fläche
+                    .frame(width: 44, height: 44)
             }
-            .disabled(isBusy || isTrimmedTextEmpty)                                                    // Guard via UI
+            .disabled(isBusy || isTrimmedTextEmpty)
             .opacity(isBusy || isTrimmedTextEmpty ? 0.4 : 1.0)
+            .accessibilityLabel(isBusy ? "Anfrage wird verarbeitet" : "Senden")
+            .accessibilityHint(isBusy ? "" : "Sendet die Nachricht an alle KI-Agenten")
         }
-        .padding(.horizontal, 14)                                                                      // Außen-Padding der gesamten Bar
+        .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial)                                                                // Bar-Glas (einmal!)
+        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -67,21 +71,20 @@ struct GlassCardInputField: View {
         .shadow(radius: 3)
     }
 
-    private var isTrimmedTextEmpty: Bool {                                                             // Hilfswert für Guard-Logik
-        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty                                   // Leer nach Trimmen?
+    private var isTrimmedTextEmpty: Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func sendInputText() {                                                                     // Zentrale Sende-Funktion
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)                         // Input bereinigen
-        guard !trimmedText.isEmpty else { return }                                                     // Guard: nichts senden
-        guard !isBusy else { return }                                                                  // Guard: nicht doppelt senden
-        onSend()                                                                                       // Callback nach außen (VM macht Request)
-        isInputFocused = false                                                                         // Tastatur schließen nach Senden
+    private func sendInputText() {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        guard !isBusy else { return }
+        onSend()
+        isInputFocused = false
     }
 }
 
 #Preview("GlassCardInputField – Vorschau") {
-    // Hilfs-Wrapper für Preview mit Fokussteuerung
     @Previewable @State var previewText: String = "Schreibe etwas für ONE …"
     @FocusState var isPreviewFocused: Bool
 
@@ -100,9 +103,9 @@ struct GlassCardInputField: View {
                 onSend: {
                     print("Gesendet: \(previewText)")
                     previewText = ""
-                    isPreviewFocused = false // Tastatur schließen
+                    isPreviewFocused = false
                 },
-                isInputFocused: $isPreviewFocused // Fokus-Binding für Preview
+                isInputFocused: $isPreviewFocused
             )
             .padding(.bottom, 8)
         }

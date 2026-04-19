@@ -7,11 +7,11 @@
 
 import SwiftUI
 
-///  Darstellung der Eingabe des Nutzers als Bubble.
+/// Darstellung der Eingabe des Nutzers als Bubble.
 struct UserPromptBubbleView: View {
 
     let promptText: String
-    
+
     var body: some View {
         Text(promptText)
             .font(.callout)
@@ -21,6 +21,7 @@ struct UserPromptBubbleView: View {
             .background(Color.white.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .frame(maxWidth: .infinity)
+            .accessibilityLabel("Deine Frage: \(promptText)")
     }
 }
 
@@ -29,7 +30,6 @@ struct UserPromptBubbleView: View {
         .padding(20)
         .background(
             Image("background").resizable().scaledToFill()
-            
         )
         .environment(\.colorScheme, .dark)
 }

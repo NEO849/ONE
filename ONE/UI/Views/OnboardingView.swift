@@ -30,6 +30,7 @@ struct OnboardingView: View {
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
+                .accessibilityHidden(true)
 
             ScrollView {
                 VStack(spacing: 32) {
@@ -53,6 +54,7 @@ struct OnboardingView: View {
                 .frame(height: 80)
                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .padding(.top, 64)
+                .accessibilityHidden(true)
 
             Text("API-Keys einrichten")
                 .font(.title2.weight(.bold))
@@ -96,6 +98,11 @@ struct OnboardingView: View {
         .disabled(!allFilled)
         .opacity(allFilled ? 1.0 : 0.5)
         .animation(.easeInOut(duration: 0.2), value: allFilled)
+        .accessibilityLabel("Einrichtung abschließen")
+        .accessibilityHint(allFilled
+            ? "Speichert alle API-Keys und startet die App"
+            : "Bitte alle vier API-Keys ausfüllen"
+        )
     }
 
     // MARK: - Logik
@@ -137,6 +144,7 @@ struct APIKeyInputRow: View {
                 }
                 .font(.subheadline)
                 .foregroundStyle(.white)
+                .accessibilityLabel("\(label) API-Key")
 
                 Button {
                     isRevealed.toggle()
@@ -146,6 +154,10 @@ struct APIKeyInputRow: View {
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(isRevealed
+                    ? "\(label) Key verbergen"
+                    : "\(label) Key anzeigen"
+                )
             }
             .padding(14)
             .glassCard(cornerRadius: 12, borderColor: .white.opacity(0.3))

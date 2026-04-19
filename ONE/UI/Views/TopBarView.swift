@@ -32,11 +32,14 @@ struct TopBarView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Gesprächsverlauf")
+                .accessibilityHint("Öffnet oder schließt die Verlauf-Sidebar")
 
                 Image(appNameAsset)
                     .resizable()
                     .scaledToFit()
                     .frame(height: 48)
+                    .accessibilityHidden(true)
             }
             .layoutPriority(0)
 
@@ -51,6 +54,14 @@ struct TopBarView: View {
                     .glassCard(cornerRadius: 12, borderColor: .white)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(layoutMode == .grid
+                ? "Layout zu gestapelt wechseln"
+                : "Layout zu Raster wechseln"
+            )
+            .accessibilityHint(layoutMode == .grid
+                ? "Zeigt Agenten-Karten übereinander versetzt"
+                : "Zeigt Agenten-Karten als 2x2 Raster"
+            )
 
             // Settings: API-Keys bearbeiten
             Button(action: onSettings) {
@@ -61,12 +72,15 @@ struct TopBarView: View {
                     .glassCard(cornerRadius: 12, borderColor: .white)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Einstellungen")
+            .accessibilityHint("Öffnet API-Key-Verwaltung")
 
             // New Chat
             Button(action: onNewRound) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.bubble.fill")
                         .imageScale(.medium)
+                        .accessibilityHidden(true)
                     Text("New Chat")
                         .font(.footnote.weight(.semibold))
                         .lineLimit(1)
@@ -77,6 +91,7 @@ struct TopBarView: View {
             }
             .buttonStyle(.plain)
             .layoutPriority(1)
+            .accessibilityLabel("Neues Gespräch starten")
         }
         .frame(maxWidth: .infinity)
     }
