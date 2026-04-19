@@ -2,13 +2,16 @@
 //  ConversationViewModelTests.swift
 //  ONETests
 //
+//  To run: add a test target in Xcode (File → New → Target → Unit Testing Bundle),
+//  set Host Application to ONE, then include this file.
+//
 
 import XCTest
 @testable import ONE
 
-// MARK: - Stub Service
+// MARK: - Stub
 
-/// Synchroner Stub: liefert sofort vordefinierte Antworten
+/// Synchroner Stub: liefert sofort vordefinierte Antworten, kein Netz, kein Delay.
 final class StubConversationService: ConversationProtocol {
 
     var planResult: [AgentType: String] = [
@@ -41,10 +44,10 @@ final class StubConversationService: ConversationProtocol {
 
     func fetchAgentStream(for agent: AgentType, plannedPrompt: String) -> AsyncThrowingStream<String, Error> {
         let text = agentReplies[agent] ?? ""
-        let shouldThrow = self.shouldThrow
+        let throws = self.shouldThrow
         return AsyncThrowingStream { continuation in
             Task {
-                if shouldThrow { continuation.finish(throwing: URLError(.notConnectedToInternet)); return }
+                if throws { continuation.finish(throwing: URLError(.notConnectedToInternet)); return }
                 continuation.yield(text)
                 continuation.finish()
             }
@@ -53,10 +56,10 @@ final class StubConversationService: ConversationProtocol {
 
     func makeFinalStream(from agentReplies: [AgentType: String], userPrompt: String) -> AsyncThrowingStream<String, Error> {
         let text = finalReply
-        let shouldThrow = self.shouldThrow
+        let throws = self.shouldThrow
         return AsyncThrowingStream { continuation in
             Task {
-                if shouldThrow { continuation.finish(throwing: URLError(.notConnectedToInternet)); return }
+                if throws { continuation.finish(throwing: URLError(.notConnectedToInternet)); return }
                 continuation.yield(text)
                 continuation.finish()
             }
@@ -74,65 +77,95 @@ final class ConversationViewModelTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        // Clear any leftover persistence from a previous test run
+        PersistenceManager.clearRounds()
         stub = StubConversationService()
         sut  = ConversationViewModel(service: stub)
     }
 
     override func tearDown() {
+        PersistenceManager.clearRounds()
         sut  = nil
         stub = nil
         super.tearDown()
     }
 
-    // MARK: Initial state
+    // MARK: – Initial state
 
-    func test_initialState_hasOneEmptyRound() {
-        XCTAssertEqual(sut.rounds.count, 1)
+    /// With StubConversationService + empty persistence → rounds starts empty.
+    func test_initialState_isEmpty() {
+        XCTAssertTrue(sut.rounds.isEmpty)
         XCTAssertTrue(sut.currentSteps.isEmpty)
         XCTAssertFalse(sut.isBusy)
     }
 
-    // MARK: Layout toggle
-
-    func test_toggleLayoutMode_switchesBetweenGridAndStacked() {
-        let initial = sut.layoutMode
-        sut.toggleLayoutMode()
-        XCTAssertNotEqual(sut.layoutMode, initial)
-        sut.toggleLayoutMode()
-        XCTAssertEqual(sut.layoutMode, initial)
+    func test_initialState_defaultLayoutIsGrid() {
+        XCTAssertEqual(sut.layoutMode, .grid)
     }
 
-    // MARK: New round
+    // MARK: – Layout toggle
+
+    func test_toggleLayoutMode_switchesMode() {
+        sut.toggleLayoutMode()
+        XCTAssertEqual(sut.layoutMode, .stacked)
+        sut.toggleLayoutMode()
+        XCTAssertEqual(sut.layoutMode, .grid)
+    }
+
+    // MARK: – New round
 
     func test_createNewRound_appendsRound() {
         sut.createNewRound()
+        XCTAssertEqual(sut.rounds.count, 1)
+    }
+
+    func test_createNewRound_insertsAtFront() {
+        sut.createNewRound()
+        let first = sut.rounds[0].id
+        sut.createNewRound()
+        // New round inserted at index 0
+        XCTAssertNotEqual(sut.rounds[0].id, first)
         XCTAssertEqual(sut.rounds.count, 2)
     }
 
-    func test_createNewRound_selectsNewRound() {
+    func test_createNewRound_selectedIndexIsZero() {
         sut.createNewRound()
-        XCTAssertEqual(sut.currentRoundId, sut.rounds.last?.id)
+        XCTAssertEqual(sut.selectedRoundIndex, 0)
     }
 
-    // MARK: Delete round
+    func test_createNewRound_currentRoundIdMatchesFirstRound() {
+        sut.createNewRound()
+        XCTAssertEqual(sut.currentRoundId, sut.rounds[0].id)
+    }
+
+    // MARK: – Delete round
 
     func test_deleteRound_removesCorrectRound() {
+        sut.createNewRound()
         sut.createNewRound()
         let idToDelete = sut.rounds[0].id
         sut.deleteRound(withId: idToDelete)
         XCTAssertFalse(sut.rounds.contains { $0.id == idToDelete })
     }
 
-    func test_deleteLastRound_createsNewEmptyRound() {
+    func test_deleteOnlyRound_leavesEmptyState() {
+        sut.createNewRound()
         let onlyId = sut.rounds[0].id
         sut.deleteRound(withId: onlyId)
-        XCTAssertEqual(sut.rounds.count, 1)
+        XCTAssertTrue(sut.rounds.isEmpty)
         XCTAssertTrue(sut.currentSteps.isEmpty)
     }
 
-    // MARK: Sidebar
+    func test_deleteRoundWithInvalidId_doesNothing() {
+        sut.createNewRound()
+        let countBefore = sut.rounds.count
+        sut.deleteRound(withId: "non-existent-id")
+        XCTAssertEqual(sut.rounds.count, countBefore)
+    }
 
-    func test_toggleSidebar_flipsOpenState() {
+    // MARK: – Sidebar
+
+    func test_toggleSidebar_flipsState() {
         XCTAssertFalse(sut.isSidebarOpen)
         sut.toggleSidebar()
         XCTAssertTrue(sut.isSidebarOpen)
@@ -140,29 +173,33 @@ final class ConversationViewModelTests: XCTestCase {
         XCTAssertFalse(sut.isSidebarOpen)
     }
 
-    // MARK: Input guard
+    // MARK: – Input guard
 
-    func test_runFreeFlowStep_withEmptyInput_doesNothing() async {
+    func test_runFreeFlowStep_withBlankInput_doesNotAddStep() {
         sut.inputText = "   "
         sut.runFreeFlowStep()
-        // isBusy bleibt false, kein Step hinzugefügt
         XCTAssertFalse(sut.isBusy)
         XCTAssertTrue(sut.currentSteps.isEmpty)
     }
 
-    // MARK: Streaming step
+    func test_runFreeFlowStep_withEmptyString_doesNotAddStep() {
+        sut.inputText = ""
+        sut.runFreeFlowStep()
+        XCTAssertFalse(sut.isBusy)
+    }
 
-    func test_runFreeFlowStep_addsStepAndFillsReplies() async throws {
+    // MARK: – Streaming step (happy path)
+
+    func test_runFreeFlowStep_completesAndFillsAllReplies() async throws {
         sut.inputText = "Test-Frage"
         sut.runFreeFlowStep()
 
-        // Warte bis isBusy wieder false
         let deadline = Date().addingTimeInterval(5)
-        while sut.isBusy && Date() < deadline {
+        while sut.isBusy, Date() < deadline {
             await Task.yield()
         }
 
-        XCTAssertFalse(sut.isBusy)
+        XCTAssertFalse(sut.isBusy, "isBusy should be false after completion")
         XCTAssertEqual(sut.currentSteps.count, 1)
 
         let step = try XCTUnwrap(sut.currentSteps.first)
@@ -173,30 +210,44 @@ final class ConversationViewModelTests: XCTestCase {
         XCTAssertEqual(step.finalReply, "Finale Zusammenfassung")
     }
 
-    // MARK: Error handling
+    func test_runFreeFlowStep_clearsInputText() async {
+        sut.inputText = "Hallo"
+        sut.runFreeFlowStep()
+        XCTAssertTrue(sut.inputText.isEmpty)
+    }
 
-    func test_runFreeFlowStep_onNetworkError_setsErrorInReplies() async {
+    func test_runFreeFlowStep_createsRoundIfNoneExists() async {
+        XCTAssertTrue(sut.rounds.isEmpty)
+        sut.inputText = "Frage ohne Runde"
+        sut.runFreeFlowStep()
+
+        let deadline = Date().addingTimeInterval(5)
+        while sut.isBusy, Date() < deadline { await Task.yield() }
+
+        XCTAssertFalse(sut.rounds.isEmpty, "runFreeFlowStep should create a round when none exists")
+    }
+
+    // MARK: – Error path
+
+    func test_runFreeFlowStep_onPlanError_setsNotBusy() async {
         stub.shouldThrow = true
         sut.inputText = "Fehler-Test"
         sut.runFreeFlowStep()
 
         let deadline = Date().addingTimeInterval(5)
-        while sut.isBusy && Date() < deadline {
-            await Task.yield()
-        }
+        while sut.isBusy, Date() < deadline { await Task.yield() }
 
         XCTAssertFalse(sut.isBusy)
-        // Step wurde angelegt
+        // Step was created before the throw, final reply holds error message
         XCTAssertEqual(sut.currentSteps.count, 1)
     }
 
-    // MARK: Update service
+    // MARK: – Update service
 
-    func test_updateService_replacesService() {
+    func test_updateService_doesNotCrash() {
         let newStub = StubConversationService()
-        newStub.finalReply = "Neuer Service"
         sut.updateService(newStub)
-        // Kein direkter Test auf private property – Verhalten via Step-Test prüfen
-        XCTAssertTrue(sut.currentSteps.isEmpty) // Zustand bleibt erhalten
+        // State is valid after service swap
+        XCTAssertEqual(sut.selectedRoundIndex, 0)
     }
 }
