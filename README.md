@@ -343,7 +343,7 @@ ONE/
 | ✅ Done | VoiceOver Accessibility (full coverage) |
 | ✅ Done | Dark Mode + Glass design system |
 | 🔄 In Progress | iPad & Landscape layout optimisation |
-| 📋 Planned | Unit tests for ViewModel and API clients |
+| ✅ Done | Unit tests for ConversationViewModel () |
 | 📋 Planned | TestFlight distribution |
 | 📋 Planned | Custom agent selection (add/remove providers) |
 | 💡 Idea | macOS (Catalyst) support |
