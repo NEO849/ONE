@@ -22,16 +22,168 @@
 
 ---
 
-## Screenshots
+## App Story
+
+> One prompt. Four perspectives. One synthesis.  
+> Here's what using ONE actually looks like — from first tap to final verdict.
+
+<br/>
+
+---
+
+### ① First launch — set up in 60 seconds
 
 <div align="center">
 
-| Grid Layout | Agent Detail | Full Answer Sheet | Welcome Screen |
-|:-----------:|:------------:|:-----------------:|:--------------:|
-| <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/grid.jpg" width="160"/> | <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/agent_card.jpg" width="160"/> | <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/sheet.jpg" width="160"/> | <img src="https://raw.githubusercontent.com/NEO849/ONE/main/docs/assets/welcome.jpg" width="160"/> |
-| 2×2 grid with live streaming | Individual agent card | Full response + copy | First launch |
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=01+Onboarding" width="220" alt="Placeholder – Onboarding Screen"/>
 
 </div>
+
+<div align="center">
+
+**Enter your four API keys once. That's it.**  
+Keys are stored in the iOS Keychain — never in iCloud, never in your code.  
+You can update or replace them anytime via the ⚙️ Settings screen.
+
+*→ Replace with: screenshot of OnboardingView with the four key input fields*
+
+</div>
+
+<br/>
+
+---
+
+### ② Ask anything — one input, four recipients
+
+<div align="center">
+
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=02+Input+Field" width="220" alt="Placeholder – Input Field"/>
+
+</div>
+
+<div align="center">
+
+**Type your question. Tap Send. Done.**  
+ONE automatically plans the most effective prompt variation for each agent  
+and dispatches all three in parallel — before you've finished reading.
+
+*→ Replace with: screenshot of GlassCardInputField with a question typed in*
+
+</div>
+
+<br/>
+
+---
+
+### ③ The core experience — four minds, live, in parallel
+
+<div align="center">
+
+<img src="https://placehold.co/460x498/0d1117/4b5563?text=03+Live+Grid+%E2%80%94+the+WOW+moment" width="460" alt="Placeholder – Grid Layout with live streaming"/>
+
+</div>
+
+<div align="center">
+
+**This is what ONE is for.**  
+Gemini researches. Claude structures. Mistral distills.  
+Every token appears the instant it arrives — three streams, one screen, zero waiting.
+
+*→ Replace with: screenshot of GridAgentCardsView with all three cards mid-stream*
+
+</div>
+
+<br/>
+
+---
+
+### ④ Go deeper — the full answer at a tap
+
+<div align="center">
+
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=04+Full+Answer+Sheet" width="220" alt="Placeholder – Full Answer Sheet"/>
+
+</div>
+
+<div align="center">
+
+**Tap any card to read the complete response.**  
+No truncation, no scrolling inside a tiny card.  
+Copy the full text to clipboard with one tap.
+
+*→ Replace with: screenshot of FullAnswerAgentSheet open (e.g. Claude's response)*
+
+</div>
+
+<br/>
+
+---
+
+### ⑤ The verdict — ChatGPT cross-checks everything
+
+<div align="center">
+
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=05+Final+Synthesis" width="220" alt="Placeholder – ChatGPT Final Synthesis"/>
+
+</div>
+
+<div align="center">
+
+**After all three agents finish, ChatGPT takes over.**  
+It reviews every answer against your original prompt, flags contradictions,  
+and delivers one synthesised, fact-checked verdict — streamed live.
+
+*→ Replace with: screenshot showing the ChatGPT final reply card appearing below the grid*
+
+</div>
+
+<br/>
+
+---
+
+### ⑥ Two layouts — switch any time
+
+<div align="center">
+
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=06+Grid+Layout" width="220" alt="Placeholder – Grid Layout"/>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=06+Stacked+Layout" width="220" alt="Placeholder – Stacked Layout"/>
+
+</div>
+
+<div align="center">
+
+**2×2 Grid** — equal cards, maximum overview &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Stacked Deck** — focused, scrollable, one at a time
+
+Tap the layout toggle in the top bar to switch. The transition is animated.
+
+*→ Replace with: Grid screenshot on the left, Stacked screenshot on the right*
+
+</div>
+
+<br/>
+
+---
+
+### ⑦ Your full history — always there
+
+<div align="center">
+
+<img src="https://placehold.co/220x477/0d1117/4b5563?text=07+History+Sidebar" width="220" alt="Placeholder – History Sidebar"/>
+
+</div>
+
+<div align="center">
+
+**Every conversation is saved automatically as JSON.**  
+Swipe from the left (or tap ☰) to open the history sidebar.  
+Tap any session to jump back. Swipe left to delete.
+
+*→ Replace with: screenshot of HistorySidebarView open, showing 3–4 past conversations*
+
+</div>
+
+<br/>
 
 ---
 
