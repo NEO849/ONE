@@ -40,6 +40,7 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 48)
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -144,6 +145,7 @@ struct APIKeyInputRow: View {
                 }
                 .font(.subheadline)
                 .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
                 .accessibilityLabel("\(label) API-Key")
 
                 Button {
