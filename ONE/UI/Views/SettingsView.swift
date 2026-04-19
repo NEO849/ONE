@@ -21,6 +21,12 @@ struct SettingsView: View {
         uniqueKeysWithValues: SecureKeyManager.APIKey.allCases.map { ($0, "") }
     )
 
+    private var allFilled: Bool {
+        SecureKeyManager.APIKey.allCases.allSatisfy {
+            !(keyValues[$0] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
     var body: some View {
         ZStack {
             Image("background")
@@ -81,12 +87,13 @@ struct SettingsView: View {
         Button(action: saveAndDismiss) {
             Text("Speichern")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(allFilled ? .white : .white.opacity(0.4))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .glassCard(cornerRadius: 16, borderColor: .blue)
+                .glassCard(cornerRadius: 16, borderColor: allFilled ? .blue : .gray)
         }
         .buttonStyle(.plain)
+        .disabled(!allFilled)
         .padding(.top, 8)
     }
 
