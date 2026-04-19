@@ -15,7 +15,6 @@ struct AgentTheme: Equatable {
     let strokeWidth: CGFloat
     let verticalAgentName: String
     
-    /// Zentraler Init mit Default-Werten für alle Agenten
     init(
         backgroundAssetName: String,
         accentColor: Color,
@@ -34,10 +33,10 @@ struct AgentTheme: Equatable {
 extension AgentType {
     var theme: AgentTheme {
         switch self {
-        case .chatgpt: return AgentTheme(backgroundAssetName: "bg_gpt",     accentColor: .blue,   verticalAgentName: "gpt_vertical")
-        case .gemini:  return AgentTheme(backgroundAssetName: "bg_gemini",  accentColor: .teal, verticalAgentName: "gemini_vertical")
-        case .claude:  return AgentTheme(backgroundAssetName: "bg_claude",  accentColor: .secondary, verticalAgentName: "claude_vertical")
-        case .mistral: return AgentTheme(backgroundAssetName: "bg_mistral", accentColor: .gray, verticalAgentName: "mistral_vertical")
+        case .chatgpt: return AgentTheme(backgroundAssetName: "bg_gpt",     accentColor: .blue,                            verticalAgentName: "gpt_vertical")
+        case .gemini:  return AgentTheme(backgroundAssetName: "bg_gemini",  accentColor: .teal,                            verticalAgentName: "gemini_vertical")
+        case .claude:  return AgentTheme(backgroundAssetName: "bg_claude",  accentColor: Color(red: 0.9, green: 0.5, blue: 0.2), verticalAgentName: "claude_vertical")
+        case .mistral: return AgentTheme(backgroundAssetName: "bg_mistral", accentColor: Color(red: 0.6, green: 0.3, blue: 0.9), verticalAgentName: "mistral_vertical")
         }
     }
 }
