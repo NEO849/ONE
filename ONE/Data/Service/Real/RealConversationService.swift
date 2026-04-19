@@ -23,7 +23,12 @@ struct RealConversationService: ConversationProtocol {
 
     private enum AgentSystemPrompt {
         static let gemini  = "Du bist ein faktenbasierter Recherche-Assistent. Liefere sachliche, gut begründete Informationen zur Anfrage auf Deutsch."
-        static let claude  = "Du bist ein strukturierter Analyst. Gliedere deine Antwort in klare, logische Schritte auf Deutsch."
+        static var claude: String {
+            let fmt = DateFormatter()
+            fmt.locale = Locale(identifier: "de_DE")
+            fmt.dateStyle = .long
+            return "Du bist ein strukturierter Analyst. Das heutige Datum ist \(fmt.string(from: Date())). Gliedere deine Antwort in klare, logische Schritte auf Deutsch."
+        }
         static let mistral = "Du bist ein prägnanter Zusammenfasser. Gib kurze, auf den Punkt gebrachte Kernaussagen auf Deutsch."
         static let chatgpt = "Du bist ein kritischer Prüfer. Die anderen drei KI-Agenten haben bereits geantwortet. Fasse ihre Kernaussagen zusammen, erkenne Widersprüche und liefere eine finale, ausgewogene Antwort auf Deutsch."
     }
