@@ -49,8 +49,10 @@ ONE/Configuration/Secrets.local.xcconfig
 .env.local
 .env.*.local
 
-# Xcode-Scheme-Dateien mit eingebetteten Keys (xcuserdata ist bereits oben)
-*.xcscheme.user
+# Xcode Shared Scheme – enthält Env-Vars mit API-Keys, darf nie committed werden.
+# Nach dem ersten Pull einmalig ausführen:
+#   git rm --cached "ONE.xcodeproj/xcshareddata/xcschemes/ONE.xcscheme"
+ONE.xcodeproj/xcshareddata/xcschemes/ONE.xcscheme
 
 # ============================================================
 # macOS
