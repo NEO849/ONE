@@ -53,22 +53,22 @@
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "CLAUDE_API_KEY"
-            value = "***REMOVED***"
+            value = ""
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "GPT_API_KEY"
-            value = "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"
+            value = ""
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "GEMINI_API_KEY"
-            value = "***REMOVED***"
+            value = ""
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "MISTRAL_API_KEY"
-            value = "LBqQJHtfesOqDuTgwXsPqMpZ10CjGNvf"
+            value = ""
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
