@@ -7,11 +7,10 @@
 
 import SwiftUI
 
-/// Eingabefeld mit Glaseffekt – optisch passend zum UI.
+/// Eingabefeld im Command-Bar-Stil – Text oben, Aktionsleiste unten.
 /// Beziehung:
 /// - Wird in ContentView als unterer Eingabebereich verwendet.
 /// - Nutzt Binding für Text, Busy-Status und Fokus.
-/// - Sendet bei Return-Taste oder Senden-Button die Eingabe nach außen.
 struct GlassCardInputField: View {
 
     @Binding var text: String
@@ -20,72 +19,89 @@ struct GlassCardInputField: View {
 
     @FocusState.Binding var isInputFocused: Bool
 
-    private let accentBlue: Color = .blue
-
-    var body: some View {
-        HStack(spacing: 14) {
-            TextField("Schreibe etwas für ONE …", text: $text, axis: .vertical)
-                .textFieldStyle(.plain)
-                .foregroundColor(.white.opacity(0.92))
-                .lineLimit(1...4)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(accentBlue.opacity(0.45), lineWidth: 1)
-                        .shadow(color: accentBlue.opacity(0.25), radius: 6)
-                )
-                .focused($isInputFocused)
-                .submitLabel(.send)
-                .onSubmit {
-                    sendInputText()
-                }
-                .accessibilityLabel("Nachricht eingeben")
-                .accessibilityHint("Deine Frage wird an alle vier KI-Agenten gesendet")
-
-            Button {
-                sendInputText()
-            } label: {
-                Image(systemName: isBusy ? "hourglass" : "paperplane.fill")
-                    .font(.title2)
-                    .foregroundColor(accentBlue)
-                    .rotationEffect(.degrees(isBusy ? 180 : 0))
-                    .animation(.easeInOut(duration: 0.3), value: isBusy)
-                    .frame(width: 44, height: 44)
-            }
-            .disabled(isBusy || isTrimmedTextEmpty)
-            .opacity(isBusy || isTrimmedTextEmpty ? 0.4 : 1.0)
-            .accessibilityLabel(isBusy ? "Anfrage wird verarbeitet" : "Senden")
-            .accessibilityHint(isBusy ? "" : "Sendet die Nachricht an alle KI-Agenten")
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(accentBlue.opacity(0.22), lineWidth: 1)
-        )
-        .shadow(radius: 3)
-    }
-
-    private var isTrimmedTextEmpty: Bool {
+    private var isTrimmedEmpty: Bool {
         text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func sendInputText() {
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else { return }
-        guard !isBusy else { return }
+    private var canSend: Bool { !isTrimmedEmpty && !isBusy }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+
+            // Texteingabe
+            TextField("Stell eine Frage an alle vier KI-Agenten …", text: $text, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.body)
+                .foregroundStyle(.white)
+                .lineLimit(1...6)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+                .focused($isInputFocused)
+                .submitLabel(.send)
+                .onSubmit { handleSend() }
+                .accessibilityLabel("Nachricht eingeben")
+                .accessibilityHint("Deine Frage wird an alle vier KI-Agenten gesendet")
+
+            // Aktionsleiste
+            HStack(alignment: .center, spacing: 0) {
+                Text(isBusy ? "Agenten antworten …" : "⏎  Senden")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.28))
+                    .padding(.leading, 16)
+
+                Spacer()
+
+                Button(action: handleSend) {
+                    ZStack {
+                        Circle()
+                            .fill(canSend ? Color.blue : Color.white.opacity(0.08))
+                            .frame(width: 32, height: 32)
+
+                        if isBusy {
+                            ProgressView()
+                                .tint(.white.opacity(0.6))
+                                .scaleEffect(0.65)
+                        } else {
+                            Image(systemName: "arrow.up")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(canSend ? .white : .white.opacity(0.25))
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSend)
+                .padding(.trailing, 10)
+                .animation(.easeInOut(duration: 0.15), value: canSend)
+                .accessibilityLabel(isBusy ? "Anfrage wird verarbeitet" : "Senden")
+                .accessibilityHint(isBusy ? "" : "Sendet die Nachricht an alle KI-Agenten")
+            }
+            .frame(height: 48)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(
+                    isInputFocused ? Color.blue.opacity(0.45) : Color.white.opacity(0.10),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+        .animation(.easeInOut(duration: 0.2), value: isInputFocused)
+    }
+
+    private func handleSend() {
+        guard canSend else { return }
         onSend()
         isInputFocused = false
     }
 }
 
 #Preview("GlassCardInputField – Vorschau") {
-    @Previewable @State var previewText: String = "Schreibe etwas für ONE …"
+    @Previewable @State var previewText: String = ""
     @FocusState var isPreviewFocused: Bool
 
     ZStack {
@@ -96,7 +112,6 @@ struct GlassCardInputField: View {
 
         VStack {
             Spacer()
-
             GlassCardInputField(
                 text: $previewText,
                 isBusy: false,
@@ -107,6 +122,7 @@ struct GlassCardInputField: View {
                 },
                 isInputFocused: $isPreviewFocused
             )
+            .padding(.horizontal, 16)
             .padding(.bottom, 8)
         }
     }
