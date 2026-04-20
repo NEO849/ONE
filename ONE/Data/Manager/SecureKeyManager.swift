@@ -8,10 +8,20 @@
 import Foundation
 import Security
 
-/// Sicherer Speicher für API-Keys – alle Keys landen im iOS Keychain.
-/// Kein UserDefaults, kein Klartext. Wird von RealConversationService
-/// und den Settings-/Onboarding-Views genutzt.
+/// Sicherer Speicher für API-Keys – ausschließlich iOS Keychain.
+///
+/// Sicherheitsgarantien:
+///   • kSecAttrAccessibleWhenUnlockedThisDeviceOnly:
+///       Keys sind nur bei entsperrtem Gerät lesbar, werden NICHT in iCloud gesichert
+///       und können nicht auf ein anderes Gerät übertragen werden.
+///   • kSecAttrService: Namespace-Isolation – verhindert Kollisionen mit anderen Apps,
+///       die denselben kSecAttrAccount-Wert verwenden könnten.
+///   • Kein UserDefaults, kein Klartext, keine Datei auf Disk.
 struct SecureKeyManager {
+
+    // MARK: - Konfiguration
+
+    private static let keychainService = "com.NEO849.ONE"
 
     // MARK: - API-Key Bezeichner
 
@@ -22,7 +32,6 @@ struct SecureKeyManager {
         case mistral = "one.apikey.mistral"
         case chatGPT = "one.apikey.chatgpt"
 
-        /// Lesbarer Name für UI-Labels.
         var displayName: String {
             switch self {
             case .gemini:  return "Gemini (Google AI Studio)"
@@ -32,7 +41,6 @@ struct SecureKeyManager {
             }
         }
 
-        /// Platzhalter-Text für das Eingabefeld.
         var placeholder: String {
             switch self {
             case .gemini:  return "AIza..."
@@ -42,7 +50,6 @@ struct SecureKeyManager {
             }
         }
 
-        /// Passender AgentType für den Key.
         var agentType: AgentType {
             switch self {
             case .gemini:  return .gemini
@@ -55,46 +62,58 @@ struct SecureKeyManager {
 
     // MARK: - Keychain Operationen
 
-    /// Speichert einen API-Key sicher im iOS Keychain.
-    /// Löscht einen vorhandenen Eintrag vor dem Neuschreiben (kein Update-Path nötig).
+    /// Speichert einen API-Key sicher im Keychain.
+    /// Überschreibt vorhandene Einträge atomisch (delete → add).
+    /// Nie iCloud-gesichert, nicht auf andere Geräte übertragbar.
     @discardableResult
     static func save(key: APIKey, value: String) -> Bool {
-        let data = Data(value.utf8)
-        let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrAccount as String: key.rawValue,
-            kSecValueData as String:   data
+        guard let data = value.data(using: .utf8) else { return false }
+        delete(key: key)
+        let query: [CFString: Any] = [
+            kSecClass:          kSecClassGenericPassword,
+            kSecAttrService:    keychainService,
+            kSecAttrAccount:    key.rawValue,
+            kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            kSecValueData:      data
         ]
-        // Bestehenden Eintrag entfernen bevor neu geschrieben wird
-        SecItemDelete(query as CFDictionary)
         return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
     }
 
     /// Liest einen API-Key aus dem Keychain. Gibt nil zurück wenn nicht vorhanden.
     static func load(key: APIKey) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrAccount as String: key.rawValue,
-            kSecReturnData as String:  true,
-            kSecMatchLimit as String:  kSecMatchLimitOne
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: keychainService,
+            kSecAttrAccount: key.rawValue,
+            kSecReturnData:  true,
+            kSecMatchLimit:  kSecMatchLimitOne
         ]
         var item: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
+              let data = item as? Data
+        else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
-    /// Löscht einen API-Key aus dem Keychain.
+    /// Löscht einen Key aus dem Keychain.
+    /// Idempotent – gibt true zurück auch wenn der Key nicht vorhanden war.
     @discardableResult
     static func delete(key: APIKey) -> Bool {
-        let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrAccount as String: key.rawValue
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: keychainService,
+            kSecAttrAccount: key.rawValue
         ]
-        return SecItemDelete(query as CFDictionary) == errSecSuccess
+        let status = SecItemDelete(query as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
     }
 
-    /// True wenn alle vier API-Keys vorhanden und nicht leer sind.
+    /// Löscht alle vier API-Keys (z. B. für Reset oder Logout).
+    static func deleteAll() {
+        APIKey.allCases.forEach { delete(key: $0) }
+    }
+
+    /// True wenn alle vier Keys vorhanden und nicht leer sind.
     /// Wird beim App-Start genutzt um zu entscheiden ob Onboarding nötig ist.
     static func allKeysPresent() -> Bool {
         APIKey.allCases.allSatisfy { key in
