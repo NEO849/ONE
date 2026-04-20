@@ -20,109 +20,137 @@ struct HistorySidebarView: View {
     let onSelect: (Int) -> Void
     let onDelete: (String) -> Void
 
-    private let sidebarBreitenFaktor: CGFloat = 0.72
+    private let drawerWidth: CGFloat = 290
 
     var body: some View {
-        GeometryReader { geometryProxy in
-            let drawerWidth = geometryProxy.size.width * sidebarBreitenFaktor
-
+        GeometryReader { proxy in
             ZStack(alignment: .leading) {
 
-                // Dunkler Overlay – Tap außerhalb schließt Sidebar
                 if isOpen {
-                    Color.black.opacity(0.3)
+                    Color.black.opacity(0.4)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.25)) { isOpen = false }
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                                isOpen = false
+                            }
                         }
+                        .transition(.opacity)
                 }
 
                 VStack(alignment: .leading, spacing: 0) {
                     sidebarHeader
-                    roundsList
+
+                    if rounds.isEmpty {
+                        emptyState
+                    } else {
+                        roundsList
+                    }
                 }
-                .frame(width: drawerWidth, height: geometryProxy.size.height)
-                .background(Color.black.opacity(0.65))
-                .glassCard(cornerRadius: 0)
+                .frame(width: drawerWidth, height: proxy.size.height)
+                .background(.ultraThinMaterial)
+                .background(Color.black.opacity(0.55))
+                .overlay(alignment: .trailing) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.07))
+                        .frame(width: 1)
+                }
                 .offset(x: isOpen ? 0 : -drawerWidth)
-                .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isOpen)
+                .animation(.spring(response: 0.3, dampingFraction: 0.88), value: isOpen)
                 .ignoresSafeArea(edges: .vertical)
             }
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Header
 
     private var sidebarHeader: some View {
-        HStack {
+        HStack(alignment: .center) {
             Text("Verlauf")
-                .font(.headline)
+                .font(.headline.weight(.semibold))
                 .foregroundStyle(.white)
 
             Spacer()
 
             Button {
-                withAnimation(.easeInOut(duration: 0.25)) { isOpen = false }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                    isOpen = false
+                }
             } label: {
                 Image(systemName: "xmark")
-                    .imageScale(.medium)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Sidebar schließen")
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 72)
+        .padding(.horizontal, 20)
+        .padding(.top, 64)
         .padding(.bottom, 16)
     }
 
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 36))
+                .foregroundStyle(.white.opacity(0.12))
+            Text("Noch keine Gespräche")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.28))
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Kein Gesprächsverlauf vorhanden")
+    }
+
+    // MARK: - Rounds List
+
     private var roundsList: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 8) {
-                if rounds.isEmpty {
-                    Text("Noch keine Gespräche")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.45))
-                        .padding(.horizontal, 24)
-                        .padding(.top, 24)
-                } else {
-                    // ID-basiertes ForEach – stabil auch bei Neuordnung und Löschung
-                    ForEach(Array(rounds.enumerated()), id: \.element.id) { indexValue, round in
-                        roundRow(round: round, indexValue: indexValue)
-                    }
+            LazyVStack(alignment: .leading, spacing: 2) {
+                ForEach(Array(rounds.enumerated()), id: \.element.id) { index, round in
+                    roundRow(round: round, index: index)
                 }
             }
+            .padding(.horizontal, 10)
             .padding(.bottom, 40)
         }
     }
 
-    private func roundRow(round: ConversationRound, indexValue: Int) -> some View {
+    private func roundRow(round: ConversationRound, index: Int) -> some View {
         let isActive = round.id == selectedRoundId
 
         return Button {
-            onSelect(indexValue)
-            withAnimation(.easeInOut(duration: 0.25)) { isOpen = false }
+            onSelect(index)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                isOpen = false
+            }
         } label: {
             HStack(spacing: 10) {
-                // Aktiv-Indikator
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(isActive ? Color.blue : Color.clear)
-                    .frame(width: 3, height: 32)
+                Image(systemName: isActive ? "bubble.left.fill" : "bubble.left")
+                    .font(.caption)
+                    .foregroundStyle(isActive ? Color.blue : .white.opacity(0.3))
+                    .frame(width: 16)
 
                 Text(round.title.isEmpty ? "Neues Gespräch" : round.title)
-                    .font(isActive ? .subheadline.weight(.semibold) : .subheadline)
-                    .foregroundStyle(isActive ? .white : .white.opacity(0.75))
+                    .font(.subheadline.weight(isActive ? .medium : .regular))
+                    .foregroundStyle(isActive ? .white : .white.opacity(0.62))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.vertical, 10)
-            .padding(.leading, 16)
-            .padding(.trailing, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isActive ? Color.white.opacity(0.12) : Color.clear)
-            )
             .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(isActive ? Color.white.opacity(0.1) : Color.clear)
+            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -136,8 +164,8 @@ struct HistorySidebarView: View {
 }
 
 #Preview("Sidebar – geöffnet") {
-    var r1 = ConversationRound(title: "SwiftUI & MVVM Basics")
-    var r2 = ConversationRound(title: "KI-Agenten – Zusammenarbeit")
+    let r1 = ConversationRound(title: "SwiftUI & MVVM Basics")
+    let r2 = ConversationRound(title: "KI-Agenten – Zusammenarbeit")
     let rounds = [r1, r2]
 
     return HistorySidebarView(
