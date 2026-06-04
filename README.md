@@ -18,6 +18,19 @@
 > ONE sends your prompt simultaneously to **Gemini**, **Claude**, **Mistral** and **ChatGPT** —  
 > streams every token live — then lets ChatGPT synthesise all three answers into one verdict.
 
+<br/>
+
+<!-- Story-/Werbe-Renders – horizontale Leiste. Echte UI-Screenshots folgen weiter unten unter „App Story". -->
+<img src="docs/assets/hero.jpg" height="150" alt="ONE"/>
+&nbsp;
+<img src="docs/assets/welcome.jpg" height="150" alt="Willkommen bei ONE"/>
+&nbsp;
+<img src="docs/assets/grid.jpg" height="150" alt="Daten analysieren · Modelle spezialisieren · Antworten formulieren"/>
+&nbsp;
+<img src="docs/assets/agent_card.jpg" height="150" alt="Spezialisierte KI-Modelle"/>
+&nbsp;
+<img src="docs/assets/sheet.jpg" height="150" alt="Daten analysieren"/>
+
 </div>
 
 ---
