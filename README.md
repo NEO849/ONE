@@ -20,16 +20,17 @@
 
 <br/>
 
-<!-- Story-/Werbe-Renders – horizontale Leiste. Echte UI-Screenshots folgen weiter unten unter „App Story". -->
-<img src="docs/assets/hero.jpg" height="150" alt="ONE"/>
-&nbsp;
-<img src="docs/assets/welcome.jpg" height="150" alt="Willkommen bei ONE"/>
-&nbsp;
-<img src="docs/assets/grid.jpg" height="150" alt="Daten analysieren · Modelle spezialisieren · Antworten formulieren"/>
-&nbsp;
-<img src="docs/assets/agent_card.jpg" height="150" alt="Spezialisierte KI-Modelle"/>
-&nbsp;
-<img src="docs/assets/sheet.jpg" height="150" alt="Daten analysieren"/>
+<!-- Story – ONE in vier Bildern: Idee, Analyse, Zusammenspiel, Synthese. -->
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/intro.png" width="400" alt="Benutzeridee"/></td>
+    <td align="center"><img src="docs/assets/story2.png" width="400" alt="Daten analysieren"/></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/assets/together1.png" width="400" alt="ONE hilft dir, Ideen zu Antworten auszuarbeiten"/></td>
+    <td align="center"><img src="docs/assets/together2.png" width="400" alt="Vier KIs: Modelle, Analyse, Ansichten, Synthesen"/></td>
+  </tr>
+</table>
 
 </div>
 
