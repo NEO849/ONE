@@ -8,8 +8,9 @@
 import SwiftUI
 import UIKit
 
-/// Zeigt die vollständige Antwort eines Agenten in einem Sheet.
-/// Features: Nutzerprompt als Kontext, Copy-Button mit Bestätigungsfeedback.
+/// Zeigt die vollstaendige Antwort eines Agenten in einem Sheet.
+/// Features: Nutzerprompt als Kontext, Copy-Button mit Bestaetigungsfeedback.
+/// Hintergrund ist jetzt einheitlich (App-Hintergrund) mit dezentem Agent-Akzent oben.
 struct FullAnswerAgentSheet: View {
 
     let agent: AgentType
@@ -18,59 +19,73 @@ struct FullAnswerAgentSheet: View {
 
     @State private var showCopied: Bool = false
 
+    private var accent: Color { agent.theme.accentColor }
+
     var body: some View {
-        ZStack {
-            Image(agent.theme.backgroundAssetName)
+        ZStack(alignment: .top) {
+            // Einheitlicher App-Hintergrund (konsistent zur Hauptansicht)
+            Image("background")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
                 .accessibilityHidden(true)
 
+            // Dezenter Farb-Akzent oben in der Agentenfarbe
+            LinearGradient(
+                colors: [accent.opacity(0.22), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 170)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+
             VStack(alignment: .leading, spacing: 0) {
                 headerBar
-                    .padding(.top, 40)
-                    .padding(.bottom, 16)
+                    .padding(.top, DesignSystem.Spacing.huge)
+                    .padding(.bottom, DesignSystem.Spacing.large)
 
                 // Nutzerprompt als Kontext
                 Text(userPrompt)
                     .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.55))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
+                    .foregroundStyle(DesignSystem.Surface.textSecondary)
+                    .padding(.horizontal, DesignSystem.Spacing.medium)
+                    .padding(.vertical, DesignSystem.Spacing.small + 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .glassCard(cornerRadius: 10, borderColor: .white.opacity(0.15))
-                    .padding(.bottom, 20)
+                    .glassCard(cornerRadius: DesignSystem.Radius.small, borderColor: .white.opacity(0.15))
+                    .padding(.bottom, DesignSystem.Spacing.large)
                     .accessibilityLabel("Deine Frage: \(userPrompt)")
 
                 GlassDivider()
-                    .padding(.bottom, 20)
+                    .padding(.bottom, DesignSystem.Spacing.large)
                     .accessibilityHidden(true)
 
-                // Vollständige Antwort
+                // Vollstaendige Antwort
                 ScrollView(showsIndicators: false) {
                     Text(fullResponse)
                         .font(.body)
                         .multilineTextAlignment(.leading)
-                        .foregroundStyle(.white.opacity(0.92))
+                        .foregroundStyle(DesignSystem.Surface.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.bottom, 40)
+                        .textSelection(.enabled)
+                        .padding(.bottom, DesignSystem.Spacing.huge)
                         .accessibilityLabel("Antwort von \(agent.displayName): \(fullResponse)")
                         .accessibilityAddTraits(.updatesFrequently)
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, DesignSystem.Spacing.xlarge)
         }
     }
 
     // MARK: - Header
 
     private var headerBar: some View {
-        HStack(spacing: 12) {
-            Image("logo")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        HStack(spacing: DesignSystem.Spacing.medium) {
+            // Kleiner Agent-Akzentpunkt fuer dezente Identitaet
+            Circle()
+                .fill(accent)
+                .frame(width: 9, height: 9)
                 .accessibilityHidden(true)
 
             Text(agent.displayName)
@@ -93,17 +108,20 @@ struct FullAnswerAgentSheet: View {
                     .font(.caption.weight(.semibold))
             }
             .foregroundStyle(showCopied ? Color.green : Color.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, DesignSystem.Spacing.medium)
+            .padding(.vertical, DesignSystem.Spacing.small)
             .glassCard(
-                cornerRadius: 10,
+                cornerRadius: DesignSystem.Radius.small,
                 borderColor: showCopied ? Color.green : Color.white.opacity(0.35)
             )
         }
-        .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.2), value: showCopied)
+        .buttonStyle(ScaleButtonStyle())
+        .sensoryFeedback(trigger: showCopied) { _, newValue in
+            newValue ? .success : nil
+        }
+        .animation(DesignSystem.Motion.standard, value: showCopied)
         .accessibilityLabel(showCopied ? "In Zwischenablage kopiert" : "Antwort kopieren")
-        .accessibilityHint(showCopied ? "" : "Kopiert die vollständige Antwort in die Zwischenablage")
+        .accessibilityHint(showCopied ? "" : "Kopiert die vollstaendige Antwort in die Zwischenablage")
     }
 
     // MARK: - Logik
@@ -118,11 +136,11 @@ struct FullAnswerAgentSheet: View {
     }
 }
 
-#Preview("FullAnswerSheet – Gemini") {
+#Preview("FullAnswerSheet - Gemini") {
     FullAnswerAgentSheet(
         agent: .gemini,
-        fullResponse: "MVVM (Model-View-ViewModel) ist ein Architekturmuster, das Darstellung (View) von Logik (ViewModel) und Datenzugriff (Model/Repository) trennt. In SwiftUI wird das ViewModel typischerweise als @MainActor-Klasse mit @Published-Properties implementiert. Die View abonniert diese Properties über @EnvironmentObject oder @StateObject und rendert sich automatisch neu bei Änderungen. Vorteile: einfaches Testen der Logik ohne UI, klare Zuständigkeiten, weniger Boilerplate gegenüber UIKit.",
-        userPrompt: "Erkläre MVVM in SwiftUI"
+        fullResponse: "MVVM trennt Darstellung (View) von Logik (ViewModel) und Datenzugriff (Model). In SwiftUI ist das ViewModel meist eine @MainActor-Klasse mit @Published-Properties. Die View reagiert automatisch auf Aenderungen. Vorteile: einfaches Testen, klare Zustaendigkeiten, weniger Boilerplate.",
+        userPrompt: "Erklaere MVVM in SwiftUI"
     )
     .environment(\.colorScheme, .dark)
 }

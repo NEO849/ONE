@@ -7,11 +7,13 @@
 
 import SwiftUI
 
-/// Einzelne Agenten-Karte mit eigenem Hintergrund, Rahmen & Glas.
-/// Zustände:
-///   • Leer  → Skeleton-Shimmer (agentResponse.isEmpty)
-///   • Fehler → Orange Stroke + Fehlertext (agentResponse beginnt mit "[AgentName]")
-///   • Normal → Antworttext + 'Mehr anzeigen'-Button
+/// Einzelne Agenten-Karte mit EINHEITLICHER Glas-Flaeche fuer alle Agenten.
+/// Die Identitaet entsteht nur noch durch einen dezenten Farb-Akzent oben
+/// und den vertikalen Namens-Schriftzug links.
+/// Zustaende:
+///   - Leer   -> Skeleton-Shimmer (agentResponse.isEmpty)
+///   - Fehler -> Orange Akzent + Fehlertext
+///   - Normal -> Antworttext + Mehr-anzeigen-Aktion
 struct AgentCardView: View {
 
     let agent: AgentType
@@ -19,6 +21,7 @@ struct AgentCardView: View {
     let userPrompt: String
     var isGridLayout: Bool = false
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showingSheet: Bool = false
     @State private var shimmerOpacity: Double = 1.0
 
@@ -35,41 +38,55 @@ struct AgentCardView: View {
             : agentResponse
     }
 
+    // Feste Kennzahlen (vom Stapel-Layout benoetigt) bleiben erhalten.
     static let cardWidthValue:     CGFloat = 260
     static let cardHeightValue:    CGFloat = 140
     static let nameRailWidthValue: CGFloat = 100
-    private let contentLeadingPaddingValue:  CGFloat = 24
-    private let contentTrailingPaddingValue: CGFloat = 34
-    private let contentBottomPaddingValue:   CGFloat = 14
-    private let maxLines: Int = 4
 
+    private let maxLines: Int = 4
     private var cardHeight: CGFloat { isGridLayout ? 170 : Self.cardHeightValue }
-    private var borderColor: Color {
+
+    /// Akzentfarbe: im Fehlerfall warnendes Orange, sonst der dezente Agent-Ton.
+    private var accent: Color {
         isErrorResponse ? .orange : theme.accentColor
     }
 
     var body: some View {
-        ZStack {
-            Image(theme.backgroundAssetName)
-                .resizable()
-                .scaledToFill()
-                .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius))
-                .accessibilityHidden(true)
-
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(borderColor.opacity(0.85), lineWidth: theme.strokeWidth)
-                .accessibilityHidden(true)
-
-            HStack(spacing: 0) {
-                LeftAgentNameRailView(
-                    agentNameAssetName: theme.verticalAgentName,
-                    accentColor: theme.accentColor
+        cardContent
+            .frame(width: isGridLayout ? nil : Self.cardWidthValue, height: cardHeight)
+            .frame(maxWidth: isGridLayout ? .infinity : nil)
+            .background(cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous))
+            .overlay(borderOverlay)
+            .depthShadow(.resting)
+            .animation(DesignSystem.Motion.standard, value: isLoading)
+            .animation(DesignSystem.Motion.standard, value: isErrorResponse)
+            .sensoryFeedback(.selection, trigger: showingSheet)
+            .sheet(isPresented: $showingSheet) {
+                FullAnswerAgentSheet(
+                    agent: agent,
+                    fullResponse: agentResponse,
+                    userPrompt: userPrompt
                 )
+                .presentationDragIndicator(.visible)
+                .presentationDetents([.large])
+            }
+    }
+
+    // MARK: - Aufbau der Karte
+
+    private var cardContent: some View {
+        HStack(spacing: 0) {
+            LeftAgentNameRailView(
+                agentNameAssetName: theme.verticalAgentName,
+                accentColor: accent
+            )
+            .accessibilityHidden(true)
+
+            GlassVerticalDivider()
                 .accessibilityHidden(true)
 
-                GlassVerticalDivider()
-                    .accessibilityHidden(true)
-
+            Group {
                 if isLoading {
                     skeletonContent
                 } else if isErrorResponse {
@@ -77,63 +94,85 @@ struct AgentCardView: View {
                 } else {
                     realContent
                 }
-
-                Spacer()
             }
+
+            Spacer(minLength: 0)
         }
-        .frame(width: isGridLayout ? nil : Self.cardWidthValue, height: cardHeight)
-        .frame(maxWidth: isGridLayout ? .infinity : nil)
-        .glassCard(cornerRadius: theme.cornerRadius)
-        .clipped()
-        .animation(.easeInOut(duration: 0.25), value: isLoading)
-        .animation(.easeInOut(duration: 0.2), value: isErrorResponse)
-        .sheet(isPresented: $showingSheet) {
-            FullAnswerAgentSheet(
-                agent: agent,
-                fullResponse: agentResponse,
-                userPrompt: userPrompt
+    }
+
+    // MARK: - Einheitliche Glas-Flaeche plus dezenter Top-Akzent (hinter dem Inhalt)
+
+    private var cardBackground: some View {
+        ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
+                .fill(DesignSystem.Surface.cardFill)
+                .background(.ultraThinMaterial)
+            topAccent
+        }
+    }
+
+    /// Dezenter Farb-Akzent oben: weicher Schein plus feine Linie.
+    private var topAccent: some View {
+        ZStack(alignment: .top) {
+            LinearGradient(
+                colors: [accent.opacity(0.16), .clear],
+                startPoint: .top,
+                endPoint: .bottom
             )
-            .presentationDragIndicator(.visible)
-            .presentationDetents([.large])
+            .frame(height: 60)
+            .blur(radius: 6)
+
+            LinearGradient(
+                colors: [accent.opacity(0.0), accent.opacity(0.85), accent.opacity(0.0)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(height: 2.5)
+            .padding(.horizontal, DesignSystem.Spacing.large)
         }
+        .allowsHitTesting(false)
+    }
+
+    private var borderOverlay: some View {
+        RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
+            .strokeBorder(
+                isErrorResponse ? Color.orange.opacity(0.55) : DesignSystem.Surface.cardStroke,
+                lineWidth: 1
+            )
     }
 
     // MARK: - Echte Antwort
 
     private var realContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer().frame(height: 24)
-
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
             Text(agentResponse)
                 .font(.callout)
                 .multilineTextAlignment(.leading)
-                .foregroundStyle(.white.opacity(0.86))
+                .foregroundStyle(DesignSystem.Surface.textPrimary)
                 .lineLimit(maxLines)
                 .truncationMode(.tail)
-                .padding(.leading, contentLeadingPaddingValue)
-                .padding(.trailing, contentTrailingPaddingValue)
-                .padding(.bottom, 6)
                 .accessibilityLabel("\(agent.displayName): \(agentResponse)")
                 .accessibilityAddTraits(.updatesFrequently)
 
             Button("Mehr anzeigen") { showingSheet = true }
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(theme.accentColor)
-                .padding(.leading, contentLeadingPaddingValue)
-                .padding(.trailing, contentTrailingPaddingValue)
-                .padding(.bottom, contentBottomPaddingValue)
-                .accessibilityLabel("Vollständige Antwort von \(agent.displayName) lesen")
-                .accessibilityHint("Öffnet ein Detail-Sheet mit der vollständigen Antwort")
+                .foregroundStyle(accent)
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityLabel("Vollstaendige Antwort von \(agent.displayName) lesen")
+                .accessibilityHint("Oeffnet ein Detail-Sheet mit der vollstaendigen Antwort")
         }
+        .padding(.top, DesignSystem.Spacing.large)
+        .padding(.leading, DesignSystem.Spacing.large)
+        .padding(.trailing, DesignSystem.Spacing.medium)
+        .padding(.bottom, DesignSystem.Spacing.medium)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Fehlerzustand
 
     private var errorContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer().frame(height: 18)
-
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
+            HStack(spacing: DesignSystem.Spacing.tiny + 2) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.orange)
@@ -142,60 +181,62 @@ struct AgentCardView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.orange)
             }
-            .padding(.leading, contentLeadingPaddingValue)
-            .padding(.bottom, 6)
 
             Text(displayedErrorMessage)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(DesignSystem.Surface.textSecondary)
                 .lineLimit(3)
-                .padding(.leading, contentLeadingPaddingValue)
-                .padding(.trailing, contentTrailingPaddingValue)
 
-            Spacer()
+            Spacer(minLength: 0)
         }
+        .padding(.top, DesignSystem.Spacing.large)
+        .padding(.leading, DesignSystem.Spacing.large)
+        .padding(.trailing, DesignSystem.Spacing.medium)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(agent.displayName), Fehler: \(displayedErrorMessage)")
     }
 
-    // MARK: - Skeleton / Ladezustand
+    // MARK: - Skeleton / Ladezustand (Reduce-Motion-fest)
 
     private var skeletonContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Spacer().frame(height: 24)
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
             skeletonLine(trailingExtra: 0)
             skeletonLine(trailingExtra: 36)
             skeletonLine(trailingExtra: 72)
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(.leading, contentLeadingPaddingValue)
-        .opacity(shimmerOpacity)
+        .padding(.top, DesignSystem.Spacing.large)
+        .padding(.leading, DesignSystem.Spacing.large)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(reduceMotion ? 0.6 : shimmerOpacity)
         .onAppear {
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true)) {
                 shimmerOpacity = 0.3
             }
         }
         .onDisappear { shimmerOpacity = 1.0 }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(agent.displayName), lädt")
+        .accessibilityLabel("\(agent.displayName), laedt")
         .accessibilityHint("Antwort wird generiert")
     }
 
     private func skeletonLine(trailingExtra: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 4)
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(Color.white.opacity(0.22))
             .frame(height: 11)
-            .padding(.trailing, contentTrailingPaddingValue + trailingExtra)
+            .padding(.trailing, DesignSystem.Spacing.medium + trailingExtra)
             .accessibilityHidden(true)
     }
 }
 
-#Preview("AgentCard – Stack-Modus") {
+#Preview("AgentCard - Stack-Modus") {
     ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 16) {
             AgentCardView(agent: .claude,  agentResponse: "Strukturiert: MVVM trennt Darstellung und Logik.", userPrompt: "Wie funktioniert MVVM?")
             AgentCardView(agent: .gemini,  agentResponse: "Fakten: ViewModel ist @MainActor und @ObservableObject.", userPrompt: "Wie funktioniert MVVM?")
-            AgentCardView(agent: .mistral, agentResponse: "Prägnant: View = UI, VM = State+Logik.", userPrompt: "Wie funktioniert MVVM?")
+            AgentCardView(agent: .mistral, agentResponse: "Praegnant: View = UI, VM = State und Logik.", userPrompt: "Wie funktioniert MVVM?")
         }
         .padding(20)
     }
@@ -203,19 +244,19 @@ struct AgentCardView: View {
     .environment(\.colorScheme, .dark)
 }
 
-#Preview("AgentCard – Ladezustand (Shimmer)") {
+#Preview("AgentCard - Ladezustand") {
     HStack(spacing: 16) {
-        AgentCardView(agent: .claude,  agentResponse: "", userPrompt: "Test")
-        AgentCardView(agent: .gemini,  agentResponse: "", userPrompt: "Test")
+        AgentCardView(agent: .claude, agentResponse: "", userPrompt: "Test")
+        AgentCardView(agent: .gemini, agentResponse: "", userPrompt: "Test")
     }
     .padding(20)
     .background(Image("background").resizable().scaledToFill().ignoresSafeArea())
     .environment(\.colorScheme, .dark)
 }
 
-#Preview("AgentCard – Fehlerzustand") {
+#Preview("AgentCard - Fehlerzustand") {
     HStack(spacing: 16) {
-        AgentCardView(agent: .claude, agentResponse: "[Claude] HTTP 401 – ungültiger API-Key.", userPrompt: "Test")
+        AgentCardView(agent: .claude, agentResponse: "[Claude] HTTP 401 - ungueltiger API-Key.", userPrompt: "Test")
         AgentCardView(agent: .gemini, agentResponse: "[Gemini] Netzwerkfehler: kein Internet.", userPrompt: "Test")
     }
     .padding(20)

@@ -7,45 +7,40 @@
 
 import SwiftUI
 
-/// Linke Rail für vertikalen Agentennamen.
-/// Design:
-/// - Glasiger Hintergrund passend zu deinem Glass-Theme.
-/// - Name steht vertikal und bleibt sichtbar auch bei Überlappung.
+/// Linke Rail fuer den vertikalen Agentennamen.
+/// Design: Die Rail hat KEINEN eigenen Hintergrund mehr, sondern verschmilzt
+/// mit der einheitlichen Glas-Flaeche der Card. Identitaet entsteht nur durch
+/// den Namen in der dezenten Agentenfarbe.
 struct LeftAgentNameRailView: View {
-    
-    // cornerRadiusValue entfernt, da es im Body nicht verwendet wird
+
     let agentNameAssetName: String
     let accentColor: Color
-    // Width of the left rail provided by the caller (keeps layout consistent)
     let railImageWidthValue: CGFloat = 46
 
     var body: some View {
         ZStack {
-            // Hintergrund-Logik (Glas-Effekt)
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    Rectangle()
-                        .fill(accentColor.opacity(0.12))
-                )
+            // Transparent -> die Rail zeigt die gemeinsame Card-Flaeche dahinter.
+            Color.clear
 
-            // Agenten-Schriftzug (Bildgröße optimiert)
+            // Agenten-Schriftzug, dezent in der Agentenfarbe eingefaerbt.
             Image(agentNameAssetName)
+                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-            
+                .foregroundStyle(accentColor.opacity(0.85))
+                .padding(.vertical, DesignSystem.Spacing.medium)
         }
         .frame(width: railImageWidthValue)
         .frame(maxHeight: .infinity)
-     }
- }
+    }
+}
 
-   #Preview {
-       LeftAgentNameRailView(
-           agentNameAssetName: "gpt_vertical",
-           accentColor: .blue,
-       )
-       .frame(height: 200)
-       .environment(\.colorScheme, .dark)
-       .border(Color.red)
-   }
+#Preview {
+    HStack(spacing: 0) {
+        LeftAgentNameRailView(agentNameAssetName: "gemini_vertical", accentColor: .blue)
+        LeftAgentNameRailView(agentNameAssetName: "claude_vertical", accentColor: .orange)
+    }
+    .frame(height: 200)
+    .background(Color.black)
+    .environment(\.colorScheme, .dark)
+}

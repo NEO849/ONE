@@ -7,36 +7,42 @@
 
 import SwiftUI
 
-/// UI-Theme pro Agent – hält Darstellung getrennt vom Model.
+/// UI-Theme pro Agent. Trennt Darstellung vom Model.
+/// Nach der Vereinheitlichung bleibt agentspezifisch nur ein dezenter
+/// Akzentton plus der vertikale Namens-Schriftzug. Flaeche, Material,
+/// Radius und Rahmen sind fuer alle Agenten identisch (siehe DesignSystem).
 struct AgentTheme: Equatable {
-    let backgroundAssetName: String
     let accentColor: Color
     let cornerRadius: CGFloat
-    let strokeWidth: CGFloat
     let verticalAgentName: String
-    
+
     init(
-        backgroundAssetName: String,
         accentColor: Color,
-        cornerRadius: CGFloat = 12,
-        strokeWidth: CGFloat = 1,
+        cornerRadius: CGFloat = DesignSystem.Radius.card,
         verticalAgentName: String
     ) {
-        self.backgroundAssetName = backgroundAssetName
         self.accentColor = accentColor
         self.cornerRadius = cornerRadius
-        self.strokeWidth = strokeWidth
         self.verticalAgentName = verticalAgentName
     }
 }
 
 extension AgentType {
+    /// Theme wird zentral aus dem DesignSystem gespeist (eine Quelle der Wahrheit).
     var theme: AgentTheme {
+        AgentTheme(
+            accentColor: DesignSystem.agentAccent(for: self),
+            verticalAgentName: verticalImageName
+        )
+    }
+
+    /// Asset-Name des vertikalen Schriftzugs pro Agent.
+    private var verticalImageName: String {
         switch self {
-        case .chatgpt: return AgentTheme(backgroundAssetName: "bg_gpt",     accentColor: .blue,                            verticalAgentName: "gpt_vertical")
-        case .gemini:  return AgentTheme(backgroundAssetName: "bg_gemini",  accentColor: .teal,                            verticalAgentName: "gemini_vertical")
-        case .claude:  return AgentTheme(backgroundAssetName: "bg_claude",  accentColor: Color(red: 0.9, green: 0.5, blue: 0.2), verticalAgentName: "claude_vertical")
-        case .mistral: return AgentTheme(backgroundAssetName: "bg_mistral", accentColor: Color(red: 0.6, green: 0.3, blue: 0.9), verticalAgentName: "mistral_vertical")
+        case .chatgpt: return "gpt_vertical"
+        case .gemini:  return "gemini_vertical"
+        case .claude:  return "claude_vertical"
+        case .mistral: return "mistral_vertical"
         }
     }
 }
